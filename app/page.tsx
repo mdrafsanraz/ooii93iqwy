@@ -23,7 +23,6 @@ interface FormData {
   artistName: string
   labelName: string
   socialLinks: string
-  spotifyLink: string
   freeTrial: boolean
 }
 
@@ -72,7 +71,6 @@ export default function RegisterPage() {
     artistName: '',
     labelName: '',
     socialLinks: '',
-    spotifyLink: '',
     freeTrial: false,
   })
   const [clientSecret, setClientSecret] = useState<string | null>(null)
@@ -143,9 +141,9 @@ export default function RegisterPage() {
     }
     
     if (formData.plan === 'label') {
-      // If free trial, Spotify link is required
+      // If free trial, social links (Facebook/Instagram) is required
       if (formData.freeTrial) {
-        return baseValid && formData.labelName && formData.spotifyLink
+        return baseValid && formData.labelName && formData.socialLinks
       }
       return baseValid && formData.labelName
     }
@@ -406,38 +404,27 @@ export default function RegisterPage() {
                       />
                     </div>
 
-                    {/* Spotify Link - Required for Free Trial */}
-                    {formData.freeTrial && (
-                      <div>
-                        <label className="block text-xs font-medium text-[var(--text)] mb-1">
-                          Spotify / Music Link * <span className="text-[var(--text-muted)] font-normal">(Required for free trial)</span>
-                        </label>
-                        <input
-                          type="url"
-                          name="spotifyLink"
-                          value={formData.spotifyLink}
-                          onChange={handleInputChange}
-                          placeholder="https://open.spotify.com/artist/..."
-                          className="input-field text-sm py-2.5"
-                        />
-                        <p className="text-[10px] text-[var(--text-muted)] mt-1">
-                          Spotify, Apple Music, SoundCloud, or YouTube Music link
-                        </p>
-                      </div>
-                    )}
-
                     <div>
                       <label className="block text-xs font-medium text-[var(--text)] mb-1">
-                        Social Links <span className="text-[var(--text-muted)] font-normal">(optional)</span>
+                        {formData.freeTrial ? (
+                          <>Facebook / Instagram * <span className="text-[var(--text-muted)] font-normal">(Required for free trial)</span></>
+                        ) : (
+                          <>Social Links <span className="text-[var(--text-muted)] font-normal">(optional)</span></>
+                        )}
                       </label>
                       <input
                         type="text"
                         name="socialLinks"
                         value={formData.socialLinks}
                         onChange={handleInputChange}
-                        placeholder="Instagram, Spotify..."
+                        placeholder={formData.freeTrial ? "facebook.com/yourpage, instagram.com/yourhandle" : "Instagram, Facebook..."}
                         className="input-field text-sm py-2.5"
                       />
+                      {formData.freeTrial && (
+                        <p className="text-[10px] text-[var(--text-muted)] mt-1">
+                          Enter your Facebook and/or Instagram profile links
+                        </p>
+                      )}
                     </div>
                   </div>
 
