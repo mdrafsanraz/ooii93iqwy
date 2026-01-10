@@ -1,4 +1,4 @@
-import { MongoClient, Db } from 'mongodb'
+import { MongoClient, Db, ServerApiVersion } from 'mongodb'
 
 const uri = process.env.MONGODB_URI || ''
 
@@ -15,24 +15,25 @@ function getClientPromise(): Promise<MongoClient> {
     return Promise.reject(new Error('MONGODB_URI environment variable is not set'))
   }
 
-  // MongoDB connection options to fix SSL issues
+  // MongoDB connection options with Server API for Atlas
   const options = {
-    tls: true,
-    tlsAllowInvalidCertificates: false,
-    tlsAllowInvalidHostnames: false,
-    retryWrites: true,
-    w: 'majority' as const,
+    serverApi: {
+      version: ServerApiVersion.v1,
+      strict: true,
+      deprecationErrors: true,
+    },
+    maxPoolSize: 10,
+    serverSelectionTimeoutMS: 5000,
+    socketTimeoutMS: 45000,
   }
 
   if (process.env.NODE_ENV === 'development') {
-    // In development, use a global variable to preserve the client across hot reloads
     if (!global._mongoClientPromise) {
       client = new MongoClient(uri, options)
       global._mongoClientPromise = client.connect()
     }
     return global._mongoClientPromise
   } else {
-    // In production, create a new client if not exists
     if (!clientPromise) {
       client = new MongoClient(uri, options)
       clientPromise = client.connect()
