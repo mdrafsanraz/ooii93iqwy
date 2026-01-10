@@ -80,62 +80,6 @@
             100% { background-position: 0% 50%; }
         }
 
-        /* Header/Navigation */
-        .header {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            z-index: 1000;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            padding: 1rem 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-        }
-
-        .logo {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: #000;
-            text-decoration: none;
-        }
-
-        .nav-buttons {
-            display: flex;
-            gap: 1rem;
-            align-items: center;
-        }
-
-        .btn-login {
-            color: #000;
-            text-decoration: none;
-            font-weight: 500;
-            padding: 0.5rem 1rem;
-            transition: all 0.3s ease;
-        }
-
-        .btn-login:hover {
-            opacity: 0.7;
-        }
-
-        .btn-signup {
-            background: #000;
-            color: #fff;
-            padding: 0.5rem 1.5rem;
-            border-radius: 6px;
-            text-decoration: none;
-            font-weight: 500;
-            transition: all 0.3s ease;
-        }
-
-        .btn-signup:hover {
-            background: #333;
-            transform: translateY(-1px);
-        }
-
         /* Hero Section */
         .hero {
             padding: 8rem 2rem 4rem;
@@ -735,15 +679,6 @@
     </style>
 </head>
 <body>
-    <!-- Header/Navigation -->
-    <header class="header">
-        <a href="#" class="logo">RDistro</a>
-        <div class="nav-buttons">
-            <a href="#" class="btn-login">Login</a>
-            <a href="https://app.rdistro.net" class="btn-signup">Sign Up</a>
-        </div>
-    </header>
-
     <!-- Animated Background -->
     <div class="gradient-bg"></div>
     <div class="bg-animation">
@@ -913,12 +848,12 @@
                     <div class="plan-price">$5</div>
                     <div class="plan-period">per year</div>
                     <ul class="plan-features">
+                        <li>1 Artist</li>
                         <li>Unlimited releases</li>
                         <li>150+ streaming platforms</li>
                         <li>Keep 100% royalties</li>
                         <li>Basic analytics</li>
                         <li>Release in 48 hours</li>
-                        <li>Email support</li>
                     </ul>
                     <a href="https://app.rdistro.net" class="btn-primary">Get Started</a>
                 </div>
