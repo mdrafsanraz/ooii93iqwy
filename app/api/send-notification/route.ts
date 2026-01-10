@@ -16,6 +16,7 @@ export async function POST(request: NextRequest) {
       artistName,
       labelName,
       socialLinks,
+      spotifyLink,
       paymentIntentId,
       amount,
       freeTrial,
@@ -32,6 +33,7 @@ export async function POST(request: NextRequest) {
       artistName,
       labelName,
       socialLinks,
+      spotifyLink,
       paymentIntentId,
       amount,
       freeTrial: freeTrial || false,
@@ -117,6 +119,12 @@ export async function POST(request: NextRequest) {
             <div class="field">
               <div class="field-label">${freeTrial ? '📱 Facebook/Instagram (Required)' : 'Social Links'}</div>
               <div class="field-value" style="font-size: 13px;">${socialLinks}</div>
+            </div>
+            ` : ''}
+            ${spotifyLink ? `
+            <div class="field">
+              <div class="field-label">🎵 Spotify/Music Link ${freeTrial ? '(Required)' : ''}</div>
+              <div class="field-value" style="font-size: 13px;"><a href="${spotifyLink}" style="color: #7c3aed;">${spotifyLink}</a></div>
             </div>
             ` : ''}
           </div>

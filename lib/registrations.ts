@@ -13,6 +13,7 @@ export interface Registration {
   artistName?: string
   labelName?: string
   socialLinks?: string
+  spotifyLink?: string
   paymentIntentId: string
   amount: number
   paymentStatus: 'succeeded' | 'pending' | 'failed' | 'trial'

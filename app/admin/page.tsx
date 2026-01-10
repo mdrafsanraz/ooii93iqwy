@@ -13,6 +13,7 @@ interface Registration {
   artistName?: string
   labelName?: string
   socialLinks?: string
+  spotifyLink?: string
   paymentIntentId: string
   amount: number
   paymentStatus: 'succeeded' | 'pending' | 'failed' | 'trial'
@@ -358,6 +359,22 @@ export default function AdminPage() {
                     {selectedRegistration.freeTrial ? '📱 Facebook/Instagram (Required)' : 'Social Links'}
                   </p>
                   <p className="text-xs">{selectedRegistration.socialLinks}</p>
+                </div>
+              )}
+
+              {selectedRegistration.spotifyLink && (
+                <div>
+                  <p className="text-[10px] text-[var(--text-muted)]">
+                    🎵 Spotify/Music Link {selectedRegistration.freeTrial && '(Required)'}
+                  </p>
+                  <a 
+                    href={selectedRegistration.spotifyLink} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-xs text-primary break-all hover:underline"
+                  >
+                    {selectedRegistration.spotifyLink}
+                  </a>
                 </div>
               )}
 
