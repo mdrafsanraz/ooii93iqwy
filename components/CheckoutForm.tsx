@@ -12,7 +12,6 @@ interface FormData {
   artistName: string
   labelName: string
   socialLinks: string
-  spotifyLink: string
   freeTrial: boolean
 }
 
