@@ -96,7 +96,7 @@ export default function AdminPage() {
     }
   }
 
-  // Export successful/paid registrations as CSV
+  // Export as import-template.csv
   const exportToCSV = () => {
     const paidRegistrations = registrations.filter(r => r.paymentStatus === 'succeeded')
     
@@ -148,14 +148,14 @@ export default function AdminPage() {
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    link.download = `rdistro-registrations-${new Date().toISOString().split('T')[0]}.csv`
+    link.download = 'import-template.csv'
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
     URL.revokeObjectURL(url)
   }
 
-  // Export emails only
+  // Export emails only as import-template.csv
   const exportEmailsOnly = () => {
     const paidRegistrations = registrations.filter(r => r.paymentStatus === 'succeeded')
     
@@ -181,7 +181,7 @@ export default function AdminPage() {
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    link.download = `rdistro-emails-${new Date().toISOString().split('T')[0]}.csv`
+    link.download = 'import-template.csv'
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
