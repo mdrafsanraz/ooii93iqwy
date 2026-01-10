@@ -1,7 +1,6 @@
 import { MongoClient, Db } from 'mongodb'
 
 const uri = process.env.MONGODB_URI || ''
-const options = {}
 
 let client: MongoClient | null = null
 let clientPromise: Promise<MongoClient> | null = null
@@ -14,6 +13,15 @@ declare global {
 function getClientPromise(): Promise<MongoClient> {
   if (!process.env.MONGODB_URI) {
     return Promise.reject(new Error('MONGODB_URI environment variable is not set'))
+  }
+
+  // MongoDB connection options to fix SSL issues
+  const options = {
+    tls: true,
+    tlsAllowInvalidCertificates: false,
+    tlsAllowInvalidHostnames: false,
+    retryWrites: true,
+    w: 'majority' as const,
   }
 
   if (process.env.NODE_ENV === 'development') {
