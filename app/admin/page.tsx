@@ -101,22 +101,19 @@ export default function AdminPage() {
     }
   }
 
-  // Export as import-template.csv with format: Email, Account Type (Label or Artist)
+  // Export ONLY pending registrations (account not yet created) as import-template.csv
   const exportToCSV = () => {
-    const filteredRegs = filter === 'trial' 
-      ? registrations.filter(r => r.freeTrial)
-      : filter === 'paid'
-      ? registrations.filter(r => r.paymentStatus === 'succeeded' && !r.freeTrial)
-      : registrations.filter(r => r.paymentStatus === 'succeeded' || r.freeTrial)
+    // Only export pending registrations (accountCreated === false)
+    const pendingRegs = registrations.filter(r => !r.accountCreated && (r.paymentStatus === 'succeeded' || r.freeTrial))
     
-    if (filteredRegs.length === 0) {
-      alert('No registrations to export')
+    if (pendingRegs.length === 0) {
+      alert('No pending registrations to export')
       return
     }
 
     // CSV format matching user's template
     const headers = ['Email', 'Account Type (Label or Artist)']
-    const rows = filteredRegs.map(reg => [
+    const rows = pendingRegs.map(reg => [
       reg.email,
       reg.plan === 'label' ? 'Label' : 'Artist'
     ])
@@ -181,6 +178,7 @@ export default function AdminPage() {
 
   const paidCount = registrations.filter(r => r.paymentStatus === 'succeeded' && !r.freeTrial).length
   const trialCount = registrations.filter(r => r.freeTrial).length
+  const pendingExportCount = registrations.filter(r => !r.accountCreated && (r.paymentStatus === 'succeeded' || r.freeTrial)).length
 
   return (
     <div className="min-h-screen bg-[var(--surface)]">
@@ -237,13 +235,13 @@ export default function AdminPage() {
           </div>
           <button
             onClick={exportToCSV}
-            disabled={filteredRegistrations.length === 0}
+            disabled={pendingExportCount === 0}
             className="btn-secondary text-xs py-2 px-3 flex items-center gap-1.5"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
-            Export CSV ({filteredRegistrations.length})
+            Export Pending ({pendingExportCount})
           </button>
         </div>
 
