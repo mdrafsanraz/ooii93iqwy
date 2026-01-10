@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-04-10',
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
+  apiVersion: '2023-10-16',
 })
 
 const PLAN_PRICES = {
@@ -12,6 +12,15 @@ const PLAN_PRICES = {
 
 export async function POST(request: NextRequest) {
   try {
+    // Check if Stripe key is configured
+    if (!process.env.STRIPE_SECRET_KEY) {
+      console.error('STRIPE_SECRET_KEY is not configured')
+      return NextResponse.json(
+        { error: 'Payment system not configured' },
+        { status: 500 }
+      )
+    }
+
     const body = await request.json()
     const { plan, email } = body
 
@@ -48,4 +57,3 @@ export async function POST(request: NextRequest) {
     )
   }
 }
-

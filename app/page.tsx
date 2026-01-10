@@ -7,7 +7,10 @@ import { Elements } from '@stripe/react-stripe-js'
 import CheckoutForm from '@/components/CheckoutForm'
 import Logo from '@/components/Logo'
 
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
+// Only load Stripe if the key is available
+const stripePromise = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY 
+  ? loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
+  : null
 
 type Plan = 'artist' | 'label'
 type Step = 'plan' | 'details' | 'payment'
@@ -70,6 +73,7 @@ export default function RegisterPage() {
   })
   const [clientSecret, setClientSecret] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const handlePlanSelect = (plan: Plan) => {
     setFormData({ ...formData, plan })
@@ -85,6 +89,7 @@ export default function RegisterPage() {
 
   const goToPayment = async () => {
     setIsLoading(true)
+    setError(null)
     try {
       const response = await fetch('/api/create-payment-intent', {
         method: 'POST',
@@ -92,10 +97,20 @@ export default function RegisterPage() {
         body: JSON.stringify({ plan: formData.plan, email: formData.email }),
       })
       const data = await response.json()
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to initialize payment')
+      }
+      
+      if (!data.clientSecret) {
+        throw new Error('No client secret received')
+      }
+      
       setClientSecret(data.clientSecret)
       setStep('payment')
-    } catch (error) {
-      console.error('Error:', error)
+    } catch (err) {
+      console.error('Error:', err)
+      setError(err instanceof Error ? err.message : 'Payment initialization failed')
     } finally {
       setIsLoading(false)
     }
@@ -330,6 +345,12 @@ export default function RegisterPage() {
                     </div>
                   </div>
 
+                  {error && (
+                    <div className="mt-3 p-2.5 rounded-lg bg-error/10 border border-error/20 text-error text-xs">
+                      ⚠ {error}
+                    </div>
+                  )}
+
                   <div className="mt-4 pt-3 border-t border-[var(--border)] flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className="text-lg">{formData.plan && plans[formData.plan].icon}</span>
@@ -350,7 +371,7 @@ export default function RegisterPage() {
               )}
 
               {/* Payment */}
-              {step === 'payment' && clientSecret && (
+              {step === 'payment' && clientSecret && stripePromise && (
                 <motion.div
                   key="payment"
                   initial={{ opacity: 0, x: 20 }}
@@ -394,6 +415,21 @@ export default function RegisterPage() {
                   >
                     <CheckoutForm formData={formData} />
                   </Elements>
+                </motion.div>
+              )}
+
+              {/* Payment Error State */}
+              {step === 'payment' && !clientSecret && (
+                <motion.div
+                  key="payment-error"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="p-6 text-center"
+                >
+                  <p className="text-error mb-4">Payment initialization failed</p>
+                  <button onClick={() => setStep('details')} className="btn-secondary">
+                    Go Back
+                  </button>
                 </motion.div>
               )}
             </AnimatePresence>
