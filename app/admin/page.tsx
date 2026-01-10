@@ -197,6 +197,41 @@ export default function AdminPage() {
   const pendingCount = registrations.filter(r => !r.accountCreated).length
   const doneCount = registrations.filter(r => r.accountCreated).length
 
+  // Get color class based on trial end date urgency
+  const getTrialDateColor = (trialEndDate: string) => {
+    const now = new Date()
+    const endDate = new Date(trialEndDate)
+    const daysLeft = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+    
+    if (daysLeft < 0) {
+      return 'text-error font-bold' // Expired - Red
+    } else if (daysLeft <= 3) {
+      return 'text-error' // Less than 3 days - Red
+    } else if (daysLeft <= 7) {
+      return 'text-warning font-medium' // Less than 7 days - Orange/Yellow
+    } else if (daysLeft <= 14) {
+      return 'text-warning' // Less than 14 days - Yellow
+    } else {
+      return 'text-success' // More than 14 days - Green
+    }
+  }
+
+  const getTrialDaysLabel = (trialEndDate: string) => {
+    const now = new Date()
+    const endDate = new Date(trialEndDate)
+    const daysLeft = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+    
+    if (daysLeft < 0) {
+      return `(${Math.abs(daysLeft)}d overdue)`
+    } else if (daysLeft === 0) {
+      return '(today!)'
+    } else if (daysLeft === 1) {
+      return '(tomorrow)'
+    } else {
+      return `(${daysLeft}d left)`
+    }
+  }
+
   return (
     <div className="min-h-screen bg-[var(--surface)]">
       <header className="bg-white border-b border-[var(--border)] sticky top-0 z-50">
@@ -386,13 +421,18 @@ export default function AdminPage() {
                     {/* Expiry Date */}
                     <div className="text-xs">
                       {reg.freeTrial && reg.trialEndDate ? (
-                        <span className="text-warning">
-                          {new Date(reg.trialEndDate).toLocaleDateString('en-US', { 
-                            month: 'short', 
-                            day: 'numeric',
-                            year: 'numeric'
-                          })}
-                        </span>
+                        <div className={getTrialDateColor(reg.trialEndDate)}>
+                          <div>
+                            {new Date(reg.trialEndDate).toLocaleDateString('en-US', { 
+                              month: 'short', 
+                              day: 'numeric',
+                              year: 'numeric'
+                            })}
+                          </div>
+                          <div className="text-[9px]">
+                            {getTrialDaysLabel(reg.trialEndDate)}
+                          </div>
+                        </div>
                       ) : reg.paymentStatus === 'succeeded' ? (
                         <span className="text-[var(--text-muted)]">
                           {new Date(new Date(reg.createdAt).setFullYear(new Date(reg.createdAt).getFullYear() + 1)).toLocaleDateString('en-US', { 
