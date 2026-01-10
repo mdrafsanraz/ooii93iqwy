@@ -7,7 +7,6 @@ import { Elements } from '@stripe/react-stripe-js'
 import CheckoutForm from '@/components/CheckoutForm'
 import Logo from '@/components/Logo'
 
-// Only load Stripe if the key is available
 const stripePromise = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY 
   ? loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
   : null
@@ -24,6 +23,8 @@ interface FormData {
   artistName: string
   labelName: string
   socialLinks: string
+  spotifyLink: string
+  freeTrial: boolean
 }
 
 const plans = {
@@ -61,6 +62,7 @@ const plans = {
 
 export default function RegisterPage() {
   const [step, setStep] = useState<Step>('plan')
+  const [freeTrial, setFreeTrial] = useState(false)
   const [formData, setFormData] = useState<FormData>({
     plan: null,
     name: '',
@@ -70,12 +72,24 @@ export default function RegisterPage() {
     artistName: '',
     labelName: '',
     socialLinks: '',
+    spotifyLink: '',
+    freeTrial: false,
   })
   const [clientSecret, setClientSecret] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  const handleFreeTrialToggle = (enabled: boolean) => {
+    setFreeTrial(enabled)
+    if (enabled) {
+      setFormData({ ...formData, plan: 'label', freeTrial: true })
+    } else {
+      setFormData({ ...formData, plan: null, freeTrial: false })
+    }
+  }
+
   const handlePlanSelect = (plan: Plan) => {
+    if (freeTrial && plan === 'artist') return // Can't select artist with free trial
     setFormData({ ...formData, plan })
   }
 
@@ -94,7 +108,11 @@ export default function RegisterPage() {
       const response = await fetch('/api/create-payment-intent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan: formData.plan, email: formData.email }),
+        body: JSON.stringify({ 
+          plan: formData.plan, 
+          email: formData.email,
+          freeTrial: formData.freeTrial,
+        }),
       })
       const data = await response.json()
       
@@ -118,8 +136,21 @@ export default function RegisterPage() {
 
   const isDetailsValid = () => {
     const { name, email, phone, country } = formData
-    if (formData.plan === 'artist') return name && email && phone && country && formData.artistName
-    return name && email && phone && country && formData.labelName
+    const baseValid = name && email && phone && country
+
+    if (formData.plan === 'artist') {
+      return baseValid && formData.artistName
+    }
+    
+    if (formData.plan === 'label') {
+      // If free trial, Spotify link is required
+      if (formData.freeTrial) {
+        return baseValid && formData.labelName && formData.spotifyLink
+      }
+      return baseValid && formData.labelName
+    }
+    
+    return false
   }
 
   const stepIndex = ['plan', 'details', 'payment'].indexOf(step)
@@ -190,16 +221,38 @@ export default function RegisterPage() {
                 >
                   <h2 className="text-lg font-bold text-[var(--text)] text-center mb-4">Choose Plan</h2>
 
+                  {/* Free Trial Toggle */}
+                  <div className="mb-4 p-3 rounded-xl bg-gradient-to-r from-primary/10 to-secondary/10 border border-primary/20">
+                    <label className="flex items-center justify-between cursor-pointer">
+                      <div>
+                        <p className="font-medium text-sm text-[var(--text)]">🎁 1 Month Free Trial</p>
+                        <p className="text-[10px] text-[var(--text-muted)]">Label plan only • Auto-charges after 30 days</p>
+                      </div>
+                      <div className="relative">
+                        <input
+                          type="checkbox"
+                          checked={freeTrial}
+                          onChange={(e) => handleFreeTrialToggle(e.target.checked)}
+                          className="sr-only"
+                        />
+                        <div className={`w-11 h-6 rounded-full transition-colors ${freeTrial ? 'bg-primary' : 'bg-gray-300'}`}>
+                          <div className={`w-5 h-5 bg-white rounded-full shadow transform transition-transform mt-0.5 ${freeTrial ? 'translate-x-5 ml-0.5' : 'translate-x-0.5'}`} />
+                        </div>
+                      </div>
+                    </label>
+                  </div>
+
                   <div className="grid grid-cols-2 gap-3">
                     {(Object.keys(plans) as Plan[]).map((planKey) => {
                       const plan = plans[planKey]
                       const isSelected = formData.plan === planKey
+                      const isDisabled = freeTrial && planKey === 'artist'
                       
                       return (
                         <div
                           key={planKey}
-                          onClick={() => handlePlanSelect(planKey)}
-                          className={`plan-card p-4 ${isSelected ? 'selected' : ''}`}
+                          onClick={() => !isDisabled && handlePlanSelect(planKey)}
+                          className={`plan-card p-4 ${isSelected ? 'selected' : ''} ${isDisabled ? 'opacity-40 cursor-not-allowed' : ''}`}
                         >
                           {plan.popular && (
                             <span className="absolute -top-2 left-3 badge-popular px-2 py-0.5 text-[10px] rounded-full">
@@ -207,10 +260,16 @@ export default function RegisterPage() {
                             </span>
                           )}
                           
+                          {freeTrial && planKey === 'label' && (
+                            <span className="absolute -top-2 right-3 bg-success text-white px-2 py-0.5 text-[10px] rounded-full font-medium">
+                              Free Trial
+                            </span>
+                          )}
+                          
                           <div className="absolute top-3 right-3">
                             <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
                               isSelected ? 'border-primary bg-primary' : 'border-[var(--border)]'
-                            }`}>
+                            } ${isDisabled ? 'opacity-50' : ''}`}>
                               {isSelected && <span className="text-white text-[8px]">✓</span>}
                             </div>
                           </div>
@@ -220,8 +279,18 @@ export default function RegisterPage() {
                           <p className="text-[10px] text-[var(--text-muted)] mb-2">{plan.description}</p>
                           
                           <div className="mb-3">
-                            <span className="text-2xl font-bold text-[var(--text)]">${plan.price}</span>
-                            <span className="text-xs text-[var(--text-muted)]">/{plan.period}</span>
+                            {freeTrial && planKey === 'label' ? (
+                              <>
+                                <span className="text-2xl font-bold text-success">$0</span>
+                                <span className="text-xs text-[var(--text-muted)]"> first month</span>
+                                <p className="text-[10px] text-[var(--text-muted)]">then ${plan.price}/year</p>
+                              </>
+                            ) : (
+                              <>
+                                <span className="text-2xl font-bold text-[var(--text)]">${plan.price}</span>
+                                <span className="text-xs text-[var(--text-muted)]">/{plan.period}</span>
+                              </>
+                            )}
                           </div>
 
                           <ul className="space-y-1">
@@ -264,6 +333,13 @@ export default function RegisterPage() {
                   </button>
 
                   <h2 className="text-lg font-bold text-[var(--text)] mb-4">Your Details</h2>
+
+                  {formData.freeTrial && (
+                    <div className="mb-4 p-3 rounded-xl bg-success/10 border border-success/20">
+                      <p className="text-sm font-medium text-success">🎁 1 Month Free Trial</p>
+                      <p className="text-[10px] text-success/80">Your card will be charged $20/year after 30 days</p>
+                    </div>
+                  )}
 
                   <div className="space-y-3">
                     <div className="grid grid-cols-2 gap-3">
@@ -330,6 +406,26 @@ export default function RegisterPage() {
                       />
                     </div>
 
+                    {/* Spotify Link - Required for Free Trial */}
+                    {formData.freeTrial && (
+                      <div>
+                        <label className="block text-xs font-medium text-[var(--text)] mb-1">
+                          Spotify / Music Link * <span className="text-[var(--text-muted)] font-normal">(Required for free trial)</span>
+                        </label>
+                        <input
+                          type="url"
+                          name="spotifyLink"
+                          value={formData.spotifyLink}
+                          onChange={handleInputChange}
+                          placeholder="https://open.spotify.com/artist/..."
+                          className="input-field text-sm py-2.5"
+                        />
+                        <p className="text-[10px] text-[var(--text-muted)] mt-1">
+                          Spotify, Apple Music, SoundCloud, or YouTube Music link
+                        </p>
+                      </div>
+                    )}
+
                     <div>
                       <label className="block text-xs font-medium text-[var(--text)] mb-1">
                         Social Links <span className="text-[var(--text-muted)] font-normal">(optional)</span>
@@ -356,7 +452,9 @@ export default function RegisterPage() {
                       <span className="text-lg">{formData.plan && plans[formData.plan].icon}</span>
                       <div>
                         <p className="text-sm font-medium text-[var(--text)]">{formData.plan && plans[formData.plan].name}</p>
-                        <p className="text-xs text-[var(--text-muted)]">${formData.plan && plans[formData.plan].price}/yr</p>
+                        <p className="text-xs text-[var(--text-muted)]">
+                          {formData.freeTrial ? '$0 first month' : `$${formData.plan && plans[formData.plan].price}/yr`}
+                        </p>
                       </div>
                     </div>
                     <button
@@ -386,17 +484,37 @@ export default function RegisterPage() {
                     ← Back
                   </button>
 
-                  <h2 className="text-lg font-bold text-[var(--text)] mb-4">Payment</h2>
+                  <h2 className="text-lg font-bold text-[var(--text)] mb-4">
+                    {formData.freeTrial ? 'Start Free Trial' : 'Payment'}
+                  </h2>
+
+                  {formData.freeTrial && (
+                    <div className="mb-4 p-3 rounded-xl bg-success/10 border border-success/20">
+                      <p className="text-sm font-medium text-success">🎁 1 Month Free Trial</p>
+                      <p className="text-[10px] text-success/80">You won&apos;t be charged today. Card will be charged $20 after 30 days.</p>
+                    </div>
+                  )}
 
                   <div className="mb-4 p-3 rounded-xl bg-[var(--surface)] flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className="text-xl">{formData.plan && plans[formData.plan].icon}</span>
                       <div>
                         <p className="text-sm font-medium text-[var(--text)]">{formData.plan && plans[formData.plan].name}</p>
-                        <p className="text-xs text-[var(--text-muted)]">Annual</p>
+                        <p className="text-xs text-[var(--text-muted)]">
+                          {formData.freeTrial ? '30-day free trial' : 'Annual'}
+                        </p>
                       </div>
                     </div>
-                    <p className="text-xl font-bold text-[var(--text)]">${formData.plan && plans[formData.plan].price}</p>
+                    <div className="text-right">
+                      {formData.freeTrial ? (
+                        <>
+                          <p className="text-xl font-bold text-success">$0</p>
+                          <p className="text-[10px] text-[var(--text-muted)]">today</p>
+                        </>
+                      ) : (
+                        <p className="text-xl font-bold text-[var(--text)]">${formData.plan && plans[formData.plan].price}</p>
+                      )}
+                    </div>
                   </div>
 
                   <Elements

@@ -12,6 +12,8 @@ interface FormData {
   artistName: string
   labelName: string
   socialLinks: string
+  spotifyLink: string
+  freeTrial: boolean
 }
 
 export default function CheckoutForm({ formData }: { formData: FormData }) {
@@ -34,31 +36,67 @@ export default function CheckoutForm({ formData }: { formData: FormData }) {
       return
     }
 
-    const { error: confirmError, paymentIntent } = await stripe.confirmPayment({
-      elements,
-      confirmParams: { return_url: `${window.location.origin}/success` },
-      redirect: 'if_required',
-    })
+    // For free trial, we use confirmSetup instead of confirmPayment
+    if (formData.freeTrial) {
+      const { error: confirmError, setupIntent } = await stripe.confirmSetup({
+        elements,
+        confirmParams: {
+          return_url: `${window.location.origin}/success?trial=true`,
+        },
+        redirect: 'if_required',
+      })
 
-    if (confirmError) {
-      setError(confirmError.message || 'Payment failed')
-      setIsProcessing(false)
-      return
-    }
+      if (confirmError) {
+        setError(confirmError.message || 'Setup failed')
+        setIsProcessing(false)
+        return
+      }
 
-    if (paymentIntent?.status === 'succeeded') {
-      try {
-        await fetch('/api/send-notification', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            ...formData,
-            paymentIntentId: paymentIntent.id,
-            amount: paymentIntent.amount / 100,
-          }),
-        })
-      } catch { /* continue */ }
-      window.location.href = '/success'
+      if (setupIntent?.status === 'succeeded') {
+        try {
+          await fetch('/api/send-notification', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              ...formData,
+              paymentIntentId: setupIntent.id,
+              amount: 0,
+              freeTrial: true,
+              trialEndDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+            }),
+          })
+        } catch { /* continue */ }
+        window.location.href = '/success?trial=true'
+      }
+    } else {
+      // Regular payment
+      const { error: confirmError, paymentIntent } = await stripe.confirmPayment({
+        elements,
+        confirmParams: { return_url: `${window.location.origin}/success` },
+        redirect: 'if_required',
+      })
+
+      if (confirmError) {
+        setError(confirmError.message || 'Payment failed')
+        setIsProcessing(false)
+        return
+      }
+
+      if (paymentIntent?.status === 'succeeded') {
+        try {
+          await fetch('/api/send-notification', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              ...formData,
+              paymentIntentId: paymentIntent.id,
+              amount: paymentIntent.amount / 100,
+              freeTrial: false,
+            }),
+          })
+        } catch { /* continue */ }
+        window.location.href = '/success'
+      }
     }
 
     setIsProcessing(false)
@@ -87,13 +125,18 @@ export default function CheckoutForm({ formData }: { formData: FormData }) {
             </svg>
             Processing...
           </>
+        ) : formData.freeTrial ? (
+          <>🎁 Start Free Trial</>
         ) : (
           <>🔒 Pay Now</>
         )}
       </button>
 
       <p className="text-center text-[10px] text-[var(--text-muted)] mt-3">
-        🔒 Secured by Stripe
+        {formData.freeTrial 
+          ? '🔒 Card saved securely • Charged $20 after 30 days'
+          : '🔒 Secured by Stripe'
+        }
       </p>
     </form>
   )

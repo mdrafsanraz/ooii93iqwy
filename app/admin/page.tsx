@@ -13,9 +13,12 @@ interface Registration {
   artistName?: string
   labelName?: string
   socialLinks?: string
+  spotifyLink?: string
   paymentIntentId: string
   amount: number
-  paymentStatus: 'succeeded' | 'pending' | 'failed'
+  paymentStatus: 'succeeded' | 'pending' | 'failed' | 'trial'
+  freeTrial: boolean
+  trialEndDate?: string | null
   createdAt: string
   accountCreated: boolean
 }
@@ -25,6 +28,7 @@ interface Stats {
   pending: number
   completed: number
   revenue: number
+  trials: number
 }
 
 export default function AdminPage() {
@@ -32,9 +36,10 @@ export default function AdminPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [registrations, setRegistrations] = useState<Registration[]>([])
-  const [stats, setStats] = useState<Stats>({ total: 0, pending: 0, completed: 0, revenue: 0 })
+  const [stats, setStats] = useState<Stats>({ total: 0, pending: 0, completed: 0, revenue: 0, trials: 0 })
   const [loading, setLoading] = useState(false)
   const [selectedRegistration, setSelectedRegistration] = useState<Registration | null>(null)
+  const [filter, setFilter] = useState<'all' | 'paid' | 'trial'>('all')
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -98,16 +103,20 @@ export default function AdminPage() {
 
   // Export as import-template.csv with format: Email, Account Type (Label or Artist)
   const exportToCSV = () => {
-    const paidRegistrations = registrations.filter(r => r.paymentStatus === 'succeeded')
+    const filteredRegs = filter === 'trial' 
+      ? registrations.filter(r => r.freeTrial)
+      : filter === 'paid'
+      ? registrations.filter(r => r.paymentStatus === 'succeeded' && !r.freeTrial)
+      : registrations.filter(r => r.paymentStatus === 'succeeded' || r.freeTrial)
     
-    if (paidRegistrations.length === 0) {
-      alert('No paid registrations to export')
+    if (filteredRegs.length === 0) {
+      alert('No registrations to export')
       return
     }
 
     // CSV format matching user's template
     const headers = ['Email', 'Account Type (Label or Artist)']
-    const rows = paidRegistrations.map(reg => [
+    const rows = filteredRegs.map(reg => [
       reg.email,
       reg.plan === 'label' ? 'Label' : 'Artist'
     ])
@@ -164,7 +173,14 @@ export default function AdminPage() {
     )
   }
 
-  const paidCount = registrations.filter(r => r.paymentStatus === 'succeeded').length
+  const filteredRegistrations = filter === 'trial'
+    ? registrations.filter(r => r.freeTrial)
+    : filter === 'paid'
+    ? registrations.filter(r => r.paymentStatus === 'succeeded' && !r.freeTrial)
+    : registrations
+
+  const paidCount = registrations.filter(r => r.paymentStatus === 'succeeded' && !r.freeTrial).length
+  const trialCount = registrations.filter(r => r.freeTrial).length
 
   return (
     <div className="min-h-screen bg-[var(--surface)]">
@@ -183,11 +199,12 @@ export default function AdminPage() {
 
       <div className="max-w-5xl mx-auto px-4 py-4">
         {/* Stats */}
-        <div className="grid grid-cols-4 gap-2 mb-4">
+        <div className="grid grid-cols-5 gap-2 mb-4">
           {[
             { label: 'Total', value: stats.total, color: 'text-[var(--text)]' },
             { label: 'Pending', value: stats.pending, color: 'text-warning' },
             { label: 'Done', value: stats.completed, color: 'text-success' },
+            { label: 'Trials', value: stats.trials, color: 'text-secondary' },
             { label: 'Revenue', value: `$${stats.revenue}`, color: 'text-primary' },
           ].map((s) => (
             <div key={s.label} className="card p-3 text-center">
@@ -197,17 +214,36 @@ export default function AdminPage() {
           ))}
         </div>
 
-        {/* Export Button */}
-        <div className="mb-4">
+        {/* Filters and Export */}
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex gap-1">
+            {[
+              { key: 'all', label: 'All' },
+              { key: 'paid', label: `Paid (${paidCount})` },
+              { key: 'trial', label: `🎁 Trials (${trialCount})` },
+            ].map((f) => (
+              <button
+                key={f.key}
+                onClick={() => setFilter(f.key as typeof filter)}
+                className={`text-xs px-3 py-1.5 rounded-lg transition-colors ${
+                  filter === f.key
+                    ? 'bg-primary text-white'
+                    : 'bg-[var(--surface-dark)] text-[var(--text-muted)] hover:bg-[var(--border)]'
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
           <button
             onClick={exportToCSV}
-            disabled={paidCount === 0}
+            disabled={filteredRegistrations.length === 0}
             className="btn-secondary text-xs py-2 px-3 flex items-center gap-1.5"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
-            Export CSV ({paidCount})
+            Export CSV ({filteredRegistrations.length})
           </button>
         </div>
 
@@ -220,23 +256,25 @@ export default function AdminPage() {
             </button>
           </div>
 
-          {registrations.length === 0 ? (
+          {filteredRegistrations.length === 0 ? (
             <div className="p-6 text-center text-sm text-[var(--text-muted)]">
-              No registrations yet
+              No registrations
             </div>
           ) : (
             <div className="divide-y divide-[var(--border)]">
-              {registrations.map((reg) => (
+              {filteredRegistrations.map((reg) => (
                 <div
                   key={reg.id}
                   onClick={() => setSelectedRegistration(reg)}
                   className="p-3 hover:bg-[var(--surface)] cursor-pointer"
                 >
                   <div className="flex items-center justify-between mb-1">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-sm font-medium text-[var(--text)]">{reg.name}</span>
                       <span className="badge text-[10px] capitalize">{reg.plan}</span>
-                      {reg.paymentStatus === 'succeeded' && (
+                      {reg.freeTrial ? (
+                        <span className="badge text-[10px] bg-secondary/10 text-secondary border-secondary/20">🎁 Trial</span>
+                      ) : reg.paymentStatus === 'succeeded' && (
                         <span className="badge badge-success text-[10px]">Paid</span>
                       )}
                     </div>
@@ -244,9 +282,12 @@ export default function AdminPage() {
                       {reg.accountCreated ? 'Done' : 'Pending'}
                     </span>
                   </div>
-                  <div className="flex items-center gap-3 text-[10px] text-[var(--text-muted)]">
+                  <div className="flex items-center gap-3 text-[10px] text-[var(--text-muted)] flex-wrap">
                     <span>{reg.email}</span>
-                    <span>${reg.amount}</span>
+                    <span>{reg.freeTrial ? '$0 (trial)' : `$${reg.amount}`}</span>
+                    {reg.freeTrial && reg.trialEndDate && (
+                      <span className="text-warning">Charges: {new Date(reg.trialEndDate).toLocaleDateString()}</span>
+                    )}
                     <span>{new Date(reg.createdAt).toLocaleDateString()}</span>
                   </div>
                 </div>
@@ -268,6 +309,18 @@ export default function AdminPage() {
               <button onClick={() => setSelectedRegistration(null)} className="text-[var(--text-muted)]">✕</button>
             </div>
 
+            {/* Trial Badge */}
+            {selectedRegistration.freeTrial && (
+              <div className="mb-3 p-2.5 rounded-lg bg-secondary/10 border border-secondary/20">
+                <p className="text-xs font-medium text-secondary">🎁 Free Trial Active</p>
+                {selectedRegistration.trialEndDate && (
+                  <p className="text-[10px] text-secondary/80">
+                    Card will be charged $20 on {new Date(selectedRegistration.trialEndDate).toLocaleDateString()}
+                  </p>
+                )}
+              </div>
+            )}
+
             <div className="space-y-3 text-sm">
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -276,7 +329,9 @@ export default function AdminPage() {
                 </div>
                 <div>
                   <p className="text-[10px] text-[var(--text-muted)]">Amount</p>
-                  <p className="font-medium">${selectedRegistration.amount}</p>
+                  <p className="font-medium">
+                    {selectedRegistration.freeTrial ? '$0 (trial)' : `$${selectedRegistration.amount}`}
+                  </p>
                 </div>
               </div>
 
@@ -298,6 +353,20 @@ export default function AdminPage() {
                 </div>
               </div>
 
+              {selectedRegistration.spotifyLink && (
+                <div>
+                  <p className="text-[10px] text-[var(--text-muted)]">🎵 Spotify/Music Link</p>
+                  <a 
+                    href={selectedRegistration.spotifyLink} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-xs text-primary break-all hover:underline"
+                  >
+                    {selectedRegistration.spotifyLink}
+                  </a>
+                </div>
+              )}
+
               {selectedRegistration.socialLinks && (
                 <div>
                   <p className="text-[10px] text-[var(--text-muted)]">Social</p>
@@ -306,7 +375,9 @@ export default function AdminPage() {
               )}
 
               <div>
-                <p className="text-[10px] text-[var(--text-muted)]">Payment ID</p>
+                <p className="text-[10px] text-[var(--text-muted)]">
+                  {selectedRegistration.freeTrial ? 'Setup ID' : 'Payment ID'}
+                </p>
                 <p className="text-[10px] font-mono break-all">{selectedRegistration.paymentIntentId}</p>
               </div>
 
@@ -314,9 +385,13 @@ export default function AdminPage() {
                 <div>
                   <p className="text-[10px] text-[var(--text-muted)]">Payment</p>
                   <span className={`badge text-[10px] ${
-                    selectedRegistration.paymentStatus === 'succeeded' ? 'badge-success' : 'badge-warning'
+                    selectedRegistration.freeTrial 
+                      ? 'bg-secondary/10 text-secondary border-secondary/20'
+                      : selectedRegistration.paymentStatus === 'succeeded' 
+                      ? 'badge-success' 
+                      : 'badge-warning'
                   }`}>
-                    {selectedRegistration.paymentStatus}
+                    {selectedRegistration.freeTrial ? 'Trial' : selectedRegistration.paymentStatus}
                   </span>
                 </div>
                 <div>
@@ -327,8 +402,15 @@ export default function AdminPage() {
                 </div>
               </div>
 
+              {selectedRegistration.freeTrial && selectedRegistration.trialEndDate && (
+                <div>
+                  <p className="text-[10px] text-[var(--text-muted)]">Trial Ends</p>
+                  <p className="text-xs text-warning">{new Date(selectedRegistration.trialEndDate).toLocaleString()}</p>
+                </div>
+              )}
+
               <div>
-                <p className="text-[10px] text-[var(--text-muted)]">Date</p>
+                <p className="text-[10px] text-[var(--text-muted)]">Registered</p>
                 <p className="text-xs">{new Date(selectedRegistration.createdAt).toLocaleString()}</p>
               </div>
             </div>

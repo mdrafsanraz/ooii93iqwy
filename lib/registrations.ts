@@ -13,9 +13,12 @@ export interface Registration {
   artistName?: string
   labelName?: string
   socialLinks?: string
+  spotifyLink?: string
   paymentIntentId: string
   amount: number
-  paymentStatus: 'succeeded' | 'pending' | 'failed'
+  paymentStatus: 'succeeded' | 'pending' | 'failed' | 'trial'
+  freeTrial: boolean
+  trialEndDate?: string | null
   createdAt: string
   accountCreated: boolean
 }
@@ -78,9 +81,10 @@ export async function getStats() {
   const total = registrations.length
   const pending = registrations.filter(r => !r.accountCreated).length
   const completed = registrations.filter(r => r.accountCreated).length
+  const trials = registrations.filter(r => r.freeTrial).length
   const revenue = registrations
     .filter(r => r.paymentStatus === 'succeeded')
     .reduce((sum, r) => sum + r.amount, 0)
   
-  return { total, pending, completed, revenue }
+  return { total, pending, completed, revenue, trials }
 }
