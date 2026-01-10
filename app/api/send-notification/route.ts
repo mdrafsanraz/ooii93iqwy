@@ -2,10 +2,21 @@ import { NextRequest, NextResponse } from 'next/server'
 import { Resend } from 'resend'
 import { addRegistration } from '@/lib/registrations'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
-
 export async function POST(request: NextRequest) {
   try {
+    // Check environment variables
+    if (!process.env.RESEND_API_KEY) {
+      console.error('RESEND_API_KEY is not set!')
+      return NextResponse.json({ error: 'Email service not configured' }, { status: 500 })
+    }
+    
+    if (!process.env.ADMIN_EMAIL) {
+      console.error('ADMIN_EMAIL is not set!')
+      return NextResponse.json({ error: 'Admin email not configured' }, { status: 500 })
+    }
+
+    const resend = new Resend(process.env.RESEND_API_KEY)
+
     const body = await request.json()
     const {
       plan,
@@ -23,23 +34,31 @@ export async function POST(request: NextRequest) {
       trialEndDate,
     } = body
 
+    console.log('Processing notification for:', email, 'Plan:', plan, 'FreeTrial:', freeTrial)
+
     // Save registration to MongoDB
-    await addRegistration({
-      plan,
-      name,
-      email,
-      phone,
-      country,
-      artistName,
-      labelName,
-      socialLinks,
-      spotifyLink,
-      paymentIntentId,
-      amount,
-      freeTrial: freeTrial || false,
-      trialEndDate: trialEndDate || null,
-      paymentStatus: freeTrial ? 'trial' : 'succeeded',
-    })
+    try {
+      await addRegistration({
+        plan,
+        name,
+        email,
+        phone,
+        country,
+        artistName,
+        labelName,
+        socialLinks,
+        spotifyLink,
+        paymentIntentId,
+        amount,
+        freeTrial: freeTrial || false,
+        trialEndDate: trialEndDate || null,
+        paymentStatus: freeTrial ? 'trial' : 'succeeded',
+      })
+      console.log('Registration saved to MongoDB')
+    } catch (dbError) {
+      console.error('MongoDB save error:', dbError)
+      // Continue to send emails even if DB fails
+    }
 
     const planName = plan === 'artist' ? 'Artist' : 'Label'
     const entityName = plan === 'artist' ? artistName : labelName
@@ -82,7 +101,7 @@ export async function POST(request: NextRequest) {
               <div class="field-label">${freeTrial ? 'Amount Today' : 'Amount'}</div>
               <div class="amount">$${amount}</div>
             </div>
-            ${freeTrial ? `
+            ${freeTrial && trialEndDate ? `
             <div class="trial-note">
               <strong>⚠️ Free Trial:</strong> Card saved. Will be charged $20 on ${new Date(trialEndDate).toLocaleDateString()}
             </div>
@@ -139,12 +158,19 @@ export async function POST(request: NextRequest) {
       </html>
     `
 
-    await resend.emails.send({
-      from: 'RDistro <registration@rdistro.net>',
-      to: process.env.ADMIN_EMAIL!,
-      subject: `${freeTrial ? '🎁 Free Trial' : '🎵'} New ${planName}: ${entityName} ${freeTrial ? '(Trial)' : `($${amount})`}`,
-      html: adminEmailHtml,
-    })
+    // Send admin email
+    try {
+      console.log('Sending admin email to:', process.env.ADMIN_EMAIL)
+      const adminResult = await resend.emails.send({
+        from: 'RDistro <registration@rdistro.net>',
+        to: process.env.ADMIN_EMAIL,
+        subject: `${freeTrial ? '🎁 Free Trial' : '🎵'} New ${planName}: ${entityName} ${freeTrial ? '(Trial)' : `($${amount})`}`,
+        html: adminEmailHtml,
+      })
+      console.log('Admin email result:', adminResult)
+    } catch (adminEmailError) {
+      console.error('Admin email error:', adminEmailError)
+    }
 
     // Customer confirmation email
     const customerEmailHtml = `
@@ -191,7 +217,7 @@ export async function POST(request: NextRequest) {
             }
           </p>
           
-          ${freeTrial ? `
+          ${freeTrial && trialEndDate ? `
           <div class="trial-warning">
             <div class="trial-warning-text">
               <strong>⚠️ Trial Information:</strong><br>
@@ -246,12 +272,19 @@ export async function POST(request: NextRequest) {
       </html>
     `
 
-    await resend.emails.send({
-      from: 'RDistro <registration@rdistro.net>',
-      to: email,
-      subject: freeTrial ? '🎁 Your Free Trial Has Started - RDistro' : '✓ We Received Your Registration - RDistro',
-      html: customerEmailHtml,
-    })
+    // Send customer email
+    try {
+      console.log('Sending customer email to:', email)
+      const customerResult = await resend.emails.send({
+        from: 'RDistro <registration@rdistro.net>',
+        to: email,
+        subject: freeTrial ? '🎁 Your Free Trial Has Started - RDistro' : '✓ We Received Your Registration - RDistro',
+        html: customerEmailHtml,
+      })
+      console.log('Customer email result:', customerResult)
+    } catch (customerEmailError) {
+      console.error('Customer email error:', customerEmailError)
+    }
 
     return NextResponse.json({ success: true })
   } catch (error) {
