@@ -16,7 +16,12 @@ interface FormData {
   freeTrial: boolean
 }
 
-export default function CheckoutForm({ formData }: { formData: FormData }) {
+interface CheckoutFormProps {
+  formData: FormData
+  paymentType?: 'payment' | 'setup'
+}
+
+export default function CheckoutForm({ formData, paymentType = 'payment' }: CheckoutFormProps) {
   const stripe = useStripe()
   const elements = useElements()
   const [isProcessing, setIsProcessing] = useState(false)
@@ -36,12 +41,16 @@ export default function CheckoutForm({ formData }: { formData: FormData }) {
       return
     }
 
-    // For free trial (subscription), we confirm setup
-    if (formData.freeTrial) {
+    const returnUrl = formData.freeTrial 
+      ? `${window.location.origin}/success?trial=true`
+      : `${window.location.origin}/success`
+
+    // Use confirmSetup for trials (SetupIntent), confirmPayment for paid (PaymentIntent)
+    if (paymentType === 'setup' || formData.freeTrial) {
       const { error: confirmError } = await stripe.confirmSetup({
         elements,
         confirmParams: {
-          return_url: `${window.location.origin}/success?trial=true`,
+          return_url: returnUrl,
         },
         redirect: 'if_required',
       })
@@ -52,27 +61,13 @@ export default function CheckoutForm({ formData }: { formData: FormData }) {
         return
       }
 
-      // If no redirect required, send notification and redirect
-      try {
-        await fetch('/api/send-notification', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            ...formData,
-            paymentIntentId: 'subscription_trial',
-            amount: 0,
-            freeTrial: true,
-            trialEndDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-          }),
-        })
-      } catch { /* continue */ }
-      
-      window.location.href = '/success?trial=true'
+      // Success - send notification and redirect
+      await sendNotification()
+      window.location.href = returnUrl
     } else {
-      // Regular payment
       const { error: confirmError, paymentIntent } = await stripe.confirmPayment({
         elements,
-        confirmParams: { return_url: `${window.location.origin}/success` },
+        confirmParams: { return_url: returnUrl },
         redirect: 'if_required',
       })
 
@@ -83,23 +78,47 @@ export default function CheckoutForm({ formData }: { formData: FormData }) {
       }
 
       if (paymentIntent?.status === 'succeeded') {
-        try {
-          await fetch('/api/send-notification', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              ...formData,
-              paymentIntentId: paymentIntent.id,
-              amount: paymentIntent.amount / 100,
-              freeTrial: false,
-            }),
-          })
-        } catch { /* continue */ }
-        window.location.href = '/success'
+        await sendNotification(paymentIntent.id, paymentIntent.amount / 100)
+        window.location.href = returnUrl
       }
     }
 
     setIsProcessing(false)
+  }
+
+  const sendNotification = async (paymentId?: string, amount?: number) => {
+    try {
+      await fetch('/api/send-notification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...formData,
+          paymentIntentId: paymentId || 'subscription',
+          amount: amount ?? (formData.freeTrial ? 0 : (formData.plan === 'artist' ? 5 : 20)),
+          freeTrial: formData.freeTrial,
+          trialEndDate: formData.freeTrial 
+            ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+            : null,
+        }),
+      })
+    } catch { /* continue */ }
+  }
+
+  const getButtonText = () => {
+    if (isProcessing) return 'Processing...'
+    if (formData.freeTrial) return '🎁 Start Free Trial'
+    if (formData.plan === 'artist') return '🔒 Pay $5/year'
+    return '🔒 Pay $20/year'
+  }
+
+  const getSubText = () => {
+    if (formData.freeTrial) {
+      return '🔒 Card saved securely • Auto-charges $20/year after 30 days'
+    }
+    if (formData.plan === 'artist') {
+      return '🔒 Secured by Stripe • Auto-renews yearly'
+    }
+    return '🔒 Secured by Stripe • Auto-renews yearly'
   }
 
   return (
@@ -117,26 +136,17 @@ export default function CheckoutForm({ formData }: { formData: FormData }) {
         disabled={!stripe || isProcessing}
         className="btn-primary w-full mt-4 flex items-center justify-center gap-2"
       >
-        {isProcessing ? (
-          <>
-            <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-            </svg>
-            Processing...
-          </>
-        ) : formData.freeTrial ? (
-          <>🎁 Start Free Trial</>
-        ) : (
-          <>🔒 Pay Now</>
+        {isProcessing && (
+          <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+          </svg>
         )}
+        {getButtonText()}
       </button>
 
       <p className="text-center text-[10px] text-[var(--text-muted)] mt-3">
-        {formData.freeTrial 
-          ? '🔒 Card saved securely • Auto-charges $20/year after 30 days'
-          : '🔒 Secured by Stripe'
-        }
+        {getSubText()}
       </p>
     </form>
   )

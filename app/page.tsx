@@ -76,6 +76,7 @@ export default function RegisterPage() {
     freeTrial: false,
   })
   const [clientSecret, setClientSecret] = useState<string | null>(null)
+  const [paymentType, setPaymentType] = useState<'payment' | 'setup'>('payment')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -125,6 +126,7 @@ export default function RegisterPage() {
       }
       
       setClientSecret(data.clientSecret)
+      setPaymentType(data.type === 'setup' ? 'setup' : 'payment')
       setStep('payment')
     } catch (err) {
       console.error('Error:', err)
@@ -540,7 +542,7 @@ export default function RegisterPage() {
                       },
                     }}
                   >
-                    <CheckoutForm formData={formData} />
+                    <CheckoutForm formData={formData} paymentType={paymentType} />
                   </Elements>
                 </motion.div>
               )}
