@@ -1,0 +1,286 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary: #7c3aed;
+  --primary-light: #8b5cf6;
+  --primary-dark: #6d28d9;
+  --secondary: #06b6d4;
+  --background: #ffffff;
+  --surface: #f8fafc;
+  --surface-dark: #f1f5f9;
+  --text: #0f172a;
+  --text-muted: #64748b;
+  --border: #e2e8f0;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --error: #ef4444;
+}
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+html,
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+body {
+  background: var(--background);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--surface);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--primary);
+  border-radius: 3px;
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Card styles */
+.card {
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* Input styles */
+.input-field {
+  @apply w-full px-4 py-3 rounded-xl transition-all duration-200 text-base;
+  background: var(--background);
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+.input-field::placeholder {
+  color: var(--text-muted);
+}
+
+.input-field:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+}
+
+/* Plan card styles */
+.plan-card {
+  @apply relative p-6 md:p-8 rounded-2xl cursor-pointer transition-all duration-300;
+  background: var(--background);
+  border: 2px solid var(--border);
+}
+
+.plan-card:hover {
+  border-color: var(--primary-light);
+  box-shadow: 0 8px 24px rgba(124, 58, 237, 0.12);
+}
+
+.plan-card.selected {
+  border-color: var(--primary);
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.03) 0%, rgba(6, 182, 212, 0.02) 100%);
+  box-shadow: 0 8px 24px rgba(124, 58, 237, 0.15);
+}
+
+/* Button styles */
+.btn-primary {
+  @apply px-6 py-3 md:px-8 md:py-4 font-semibold rounded-xl transition-all duration-200 text-base;
+  background: var(--primary);
+  color: white;
+  border: none;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--primary-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  @apply px-5 py-2.5 font-medium rounded-xl transition-all duration-200;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+.btn-secondary:hover {
+  background: var(--surface-dark);
+  border-color: var(--text-muted);
+}
+
+/* Stripe element styles */
+.StripeElement {
+  padding: 14px 16px;
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  transition: all 0.2s;
+}
+
+.StripeElement--focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+}
+
+.StripeElement--invalid {
+  border-color: var(--error);
+}
+
+/* Badge */
+.badge {
+  @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium;
+  background: rgba(124, 58, 237, 0.1);
+  color: var(--primary);
+}
+
+.badge-success {
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--success);
+}
+
+.badge-warning {
+  background: rgba(245, 158, 11, 0.1);
+  color: var(--warning);
+}
+
+.badge-error {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--error);
+}
+
+.badge-popular {
+  background: var(--primary);
+  color: white;
+}
+
+/* Feature list */
+.feature-item {
+  @apply flex items-center gap-3 text-sm;
+  color: var(--text-muted);
+}
+
+.feature-icon {
+  @apply w-5 h-5 flex-shrink-0;
+  color: var(--success);
+}
+
+/* Stats */
+.stat-value {
+  @apply text-2xl font-bold;
+  color: var(--text);
+}
+
+.stat-label {
+  @apply text-xs mt-1;
+  color: var(--text-muted);
+}
+
+/* Step indicator */
+.step-indicator {
+  @apply w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-300;
+}
+
+.step-indicator.active {
+  background: var(--primary);
+  color: white;
+}
+
+.step-indicator.completed {
+  background: var(--success);
+  color: white;
+}
+
+.step-indicator.pending {
+  background: var(--surface-dark);
+  color: var(--text-muted);
+}
+
+.step-line {
+  @apply h-0.5 transition-all duration-300;
+  background: var(--border);
+}
+
+.step-line.completed {
+  background: var(--success);
+}
+
+/* Table styles */
+.table-header {
+  @apply text-left text-xs font-semibold uppercase tracking-wider py-3 px-4;
+  color: var(--text-muted);
+  background: var(--surface);
+}
+
+.table-cell {
+  @apply py-4 px-4 text-sm;
+  border-bottom: 1px solid var(--border);
+}
+
+/* Mobile responsive utilities */
+@media (max-width: 640px) {
+  .card {
+    border-radius: 12px;
+  }
+  
+  .plan-card {
+    padding: 1.25rem;
+  }
+  
+  .btn-primary {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Admin sidebar */
+.sidebar {
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+}
+
+.sidebar-link {
+  @apply flex items-center gap-3 px-4 py-3 rounded-lg transition-colors;
+  color: var(--text-muted);
+}
+
+.sidebar-link:hover {
+  background: var(--surface-dark);
+  color: var(--text);
+}
+
+.sidebar-link.active {
+  background: rgba(124, 58, 237, 0.1);
+  color: var(--primary);
+}
