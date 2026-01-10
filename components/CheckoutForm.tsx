@@ -36,9 +36,9 @@ export default function CheckoutForm({ formData }: { formData: FormData }) {
       return
     }
 
-    // For free trial, we use confirmSetup instead of confirmPayment
+    // For free trial (subscription), we confirm setup
     if (formData.freeTrial) {
-      const { error: confirmError, setupIntent } = await stripe.confirmSetup({
+      const { error: confirmError } = await stripe.confirmSetup({
         elements,
         confirmParams: {
           return_url: `${window.location.origin}/success?trial=true`,
@@ -52,22 +52,22 @@ export default function CheckoutForm({ formData }: { formData: FormData }) {
         return
       }
 
-      if (setupIntent?.status === 'succeeded') {
-        try {
-          await fetch('/api/send-notification', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              ...formData,
-              paymentIntentId: setupIntent.id,
-              amount: 0,
-              freeTrial: true,
-              trialEndDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-            }),
-          })
-        } catch { /* continue */ }
-        window.location.href = '/success?trial=true'
-      }
+      // If no redirect required, send notification and redirect
+      try {
+        await fetch('/api/send-notification', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...formData,
+            paymentIntentId: 'subscription_trial',
+            amount: 0,
+            freeTrial: true,
+            trialEndDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+          }),
+        })
+      } catch { /* continue */ }
+      
+      window.location.href = '/success?trial=true'
     } else {
       // Regular payment
       const { error: confirmError, paymentIntent } = await stripe.confirmPayment({
@@ -134,7 +134,7 @@ export default function CheckoutForm({ formData }: { formData: FormData }) {
 
       <p className="text-center text-[10px] text-[var(--text-muted)] mt-3">
         {formData.freeTrial 
-          ? '🔒 Card saved securely • Charged $20 after 30 days'
+          ? '🔒 Card saved securely • Auto-charges $20/year after 30 days'
           : '🔒 Secured by Stripe'
         }
       </p>
