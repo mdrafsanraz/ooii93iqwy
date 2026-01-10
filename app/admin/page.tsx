@@ -39,7 +39,9 @@ export default function AdminPage() {
   const [stats, setStats] = useState<Stats>({ total: 0, pending: 0, completed: 0, revenue: 0, trials: 0 })
   const [loading, setLoading] = useState(false)
   const [selectedRegistration, setSelectedRegistration] = useState<Registration | null>(null)
-  const [filter, setFilter] = useState<'all' | 'paid' | 'trial'>('all')
+  const [paymentFilter, setPaymentFilter] = useState<'all' | 'paid' | 'trial'>('all')
+  const [typeFilter, setTypeFilter] = useState<'all' | 'artist' | 'label'>('all')
+  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'done'>('all')
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -101,19 +103,37 @@ export default function AdminPage() {
     }
   }
 
-  // Export ONLY pending registrations (account not yet created) as import-template.csv
+  // Apply all filters
+  const getFilteredRegistrations = () => {
+    return registrations.filter(reg => {
+      // Payment filter
+      if (paymentFilter === 'paid' && (reg.freeTrial || reg.paymentStatus !== 'succeeded')) return false
+      if (paymentFilter === 'trial' && !reg.freeTrial) return false
+      
+      // Type filter
+      if (typeFilter === 'artist' && reg.plan !== 'artist') return false
+      if (typeFilter === 'label' && reg.plan !== 'label') return false
+      
+      // Status filter
+      if (statusFilter === 'pending' && reg.accountCreated) return false
+      if (statusFilter === 'done' && !reg.accountCreated) return false
+      
+      return true
+    })
+  }
+
+  const filteredRegistrations = getFilteredRegistrations()
+
+  // Export filtered registrations as import-template.csv
   const exportToCSV = () => {
-    // Only export pending registrations (accountCreated === false)
-    const pendingRegs = registrations.filter(r => !r.accountCreated && (r.paymentStatus === 'succeeded' || r.freeTrial))
-    
-    if (pendingRegs.length === 0) {
-      alert('No pending registrations to export')
+    if (filteredRegistrations.length === 0) {
+      alert('No registrations to export with current filters')
       return
     }
 
     // CSV format matching user's template
     const headers = ['Email', 'Account Type (Label or Artist)']
-    const rows = pendingRegs.map(reg => [
+    const rows = filteredRegistrations.map(reg => [
       reg.email,
       reg.plan === 'label' ? 'Label' : 'Artist'
     ])
@@ -170,15 +190,12 @@ export default function AdminPage() {
     )
   }
 
-  const filteredRegistrations = filter === 'trial'
-    ? registrations.filter(r => r.freeTrial)
-    : filter === 'paid'
-    ? registrations.filter(r => r.paymentStatus === 'succeeded' && !r.freeTrial)
-    : registrations
-
   const paidCount = registrations.filter(r => r.paymentStatus === 'succeeded' && !r.freeTrial).length
   const trialCount = registrations.filter(r => r.freeTrial).length
-  const pendingExportCount = registrations.filter(r => !r.accountCreated && (r.paymentStatus === 'succeeded' || r.freeTrial)).length
+  const artistCount = registrations.filter(r => r.plan === 'artist').length
+  const labelCount = registrations.filter(r => r.plan === 'label').length
+  const pendingCount = registrations.filter(r => !r.accountCreated).length
+  const doneCount = registrations.filter(r => r.accountCreated).length
 
   return (
     <div className="min-h-screen bg-[var(--surface)]">
@@ -212,37 +229,92 @@ export default function AdminPage() {
           ))}
         </div>
 
-        {/* Filters and Export */}
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-          <div className="flex gap-1">
-            {[
-              { key: 'all', label: 'All' },
-              { key: 'paid', label: `Paid (${paidCount})` },
-              { key: 'trial', label: `🎁 Trials (${trialCount})` },
-            ].map((f) => (
-              <button
-                key={f.key}
-                onClick={() => setFilter(f.key as typeof filter)}
-                className={`text-xs px-3 py-1.5 rounded-lg transition-colors ${
-                  filter === f.key
-                    ? 'bg-primary text-white'
-                    : 'bg-[var(--surface-dark)] text-[var(--text-muted)] hover:bg-[var(--border)]'
-                }`}
-              >
-                {f.label}
-              </button>
-            ))}
+        {/* Filters */}
+        <div className="mb-4 space-y-2">
+          <div className="flex flex-wrap items-center gap-4">
+            {/* Payment Filter */}
+            <div className="flex items-center gap-1">
+              <span className="text-[10px] text-[var(--text-muted)] mr-1">Payment:</span>
+              {[
+                { key: 'all', label: 'All' },
+                { key: 'paid', label: `Paid (${paidCount})` },
+                { key: 'trial', label: `Trial (${trialCount})` },
+              ].map((f) => (
+                <button
+                  key={f.key}
+                  onClick={() => setPaymentFilter(f.key as typeof paymentFilter)}
+                  className={`text-[10px] px-2 py-1 rounded-md transition-colors ${
+                    paymentFilter === f.key
+                      ? 'bg-primary text-white'
+                      : 'bg-[var(--surface-dark)] text-[var(--text-muted)] hover:bg-[var(--border)]'
+                  }`}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Type Filter */}
+            <div className="flex items-center gap-1">
+              <span className="text-[10px] text-[var(--text-muted)] mr-1">Type:</span>
+              {[
+                { key: 'all', label: 'All' },
+                { key: 'artist', label: `🎤 Artist (${artistCount})` },
+                { key: 'label', label: `🏢 Label (${labelCount})` },
+              ].map((f) => (
+                <button
+                  key={f.key}
+                  onClick={() => setTypeFilter(f.key as typeof typeFilter)}
+                  className={`text-[10px] px-2 py-1 rounded-md transition-colors ${
+                    typeFilter === f.key
+                      ? 'bg-primary text-white'
+                      : 'bg-[var(--surface-dark)] text-[var(--text-muted)] hover:bg-[var(--border)]'
+                  }`}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Status Filter */}
+            <div className="flex items-center gap-1">
+              <span className="text-[10px] text-[var(--text-muted)] mr-1">Status:</span>
+              {[
+                { key: 'all', label: 'All' },
+                { key: 'pending', label: `⏳ Pending (${pendingCount})` },
+                { key: 'done', label: `✓ Done (${doneCount})` },
+              ].map((f) => (
+                <button
+                  key={f.key}
+                  onClick={() => setStatusFilter(f.key as typeof statusFilter)}
+                  className={`text-[10px] px-2 py-1 rounded-md transition-colors ${
+                    statusFilter === f.key
+                      ? 'bg-primary text-white'
+                      : 'bg-[var(--surface-dark)] text-[var(--text-muted)] hover:bg-[var(--border)]'
+                  }`}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
           </div>
-          <button
-            onClick={exportToCSV}
-            disabled={pendingExportCount === 0}
-            className="btn-secondary text-xs py-2 px-3 flex items-center gap-1.5"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            Export Pending ({pendingExportCount})
-          </button>
+
+          {/* Export Button */}
+          <div className="flex items-center justify-between">
+            <p className="text-[10px] text-[var(--text-muted)]">
+              Showing {filteredRegistrations.length} of {registrations.length} registrations
+            </p>
+            <button
+              onClick={exportToCSV}
+              disabled={filteredRegistrations.length === 0}
+              className="btn-secondary text-xs py-2 px-3 flex items-center gap-1.5"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Export Filtered ({filteredRegistrations.length})
+            </button>
+          </div>
         </div>
 
         {/* Table */}
