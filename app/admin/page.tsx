@@ -21,6 +21,10 @@ interface Registration {
   trialEndDate?: string | null
   createdAt: string
   accountCreated: boolean
+  subscriptionId?: string
+  subscriptionStatus?: 'trialing' | 'active' | 'past_due' | 'cancelled'
+  lastPaymentDate?: string
+  lastPaymentAmount?: number
 }
 
 interface Stats {

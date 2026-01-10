@@ -21,6 +21,11 @@ export interface Registration {
   trialEndDate?: string | null
   createdAt: string
   accountCreated: boolean
+  // Subscription tracking
+  subscriptionId?: string
+  subscriptionStatus?: 'trialing' | 'active' | 'past_due' | 'cancelled'
+  lastPaymentDate?: string
+  lastPaymentAmount?: number
 }
 
 const COLLECTION = 'registrations'
