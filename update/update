@@ -855,8 +855,7 @@
                         <li>Basic analytics</li>
                         <li>Release in 48 hours</li>
                     </ul>
-                    <a href="https://app.rdistro.net" class="btn-primary">Sign Up</a>
-                    <a href="#" class="btn-secondary" style="display: block; margin-top: 0.75rem; text-align: center;">Login</a>
+                    <a href="https://app.rdistro.net" class="btn-primary">Get Started</a>
                 </div>
                 
                 <div class="pricing-card featured">
@@ -872,8 +871,7 @@
                         <li>Release in 24 hours</li>
                         <li>Dedicated account manager</li>
                     </ul>
-                    <a href="https://app.rdistro.net" class="btn-primary">Sign Up</a>
-                    <a href="#" class="btn-secondary" style="display: block; margin-top: 0.75rem; text-align: center;">Login</a>
+                    <a href="https://app.rdistro.net" class="btn-primary">Start Free Trial</a>
                 </div>
             </div>
         </section>
