@@ -22,8 +22,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
   
-  const registrations = getRegistrations()
-  const stats = getStats()
+  const registrations = await getRegistrations()
+  const stats = await getStats()
   
   return NextResponse.json({ registrations, stats })
 }
@@ -35,7 +35,7 @@ export async function PATCH(request: NextRequest) {
   
   const { id, accountCreated } = await request.json()
   
-  const updated = updateRegistration(id, { accountCreated })
+  const updated = await updateRegistration(id, { accountCreated })
   
   if (!updated) {
     return NextResponse.json({ error: 'Registration not found' }, { status: 404 })
@@ -43,4 +43,3 @@ export async function PATCH(request: NextRequest) {
   
   return NextResponse.json({ success: true, registration: updated })
 }
-

@@ -20,8 +20,8 @@ export async function POST(request: NextRequest) {
       amount,
     } = body
 
-    // Save registration to storage
-    addRegistration({
+    // Save registration to MongoDB
+    await addRegistration({
       plan,
       name,
       email,

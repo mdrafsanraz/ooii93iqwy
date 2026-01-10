@@ -96,7 +96,7 @@ export default function AdminPage() {
     }
   }
 
-  // Export as import-template.csv
+  // Export as import-template.csv with format: Email, Account Type (Label or Artist)
   const exportToCSV = () => {
     const paidRegistrations = registrations.filter(r => r.paymentStatus === 'succeeded')
     
@@ -105,78 +105,20 @@ export default function AdminPage() {
       return
     }
 
-    // CSV headers
-    const headers = [
-      'Name',
-      'Email',
-      'Phone',
-      'Country',
-      'Plan',
-      'Artist/Label Name',
-      'Social Links',
-      'Amount',
-      'Payment Status',
-      'Account Created',
-      'Registration Date',
-      'Payment ID'
-    ]
-
-    // CSV rows
+    // CSV format matching user's template
+    const headers = ['Email', 'Account Type (Label or Artist)']
     const rows = paidRegistrations.map(reg => [
-      reg.name,
       reg.email,
-      reg.phone,
-      reg.country,
-      reg.plan,
-      reg.artistName || reg.labelName || '',
-      reg.socialLinks || '',
-      `$${reg.amount}`,
-      reg.paymentStatus,
-      reg.accountCreated ? 'Yes' : 'No',
-      new Date(reg.createdAt).toLocaleDateString(),
-      reg.paymentIntentId
+      reg.plan === 'label' ? 'Label' : 'Artist'
     ])
 
     // Build CSV content
     const csvContent = [
       headers.join(','),
-      ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+      ...rows.map(row => row.join(','))
     ].join('\n')
 
     // Download file
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = 'import-template.csv'
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    URL.revokeObjectURL(url)
-  }
-
-  // Export emails only as import-template.csv
-  const exportEmailsOnly = () => {
-    const paidRegistrations = registrations.filter(r => r.paymentStatus === 'succeeded')
-    
-    if (paidRegistrations.length === 0) {
-      alert('No paid registrations to export')
-      return
-    }
-
-    // Simple email list format
-    const headers = ['Email', 'Name', 'Plan']
-    const rows = paidRegistrations.map(reg => [
-      reg.email,
-      reg.name,
-      reg.plan
-    ])
-
-    const csvContent = [
-      headers.join(','),
-      ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
-    ].join('\n')
-
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
@@ -255,8 +197,8 @@ export default function AdminPage() {
           ))}
         </div>
 
-        {/* Export Buttons */}
-        <div className="flex flex-wrap gap-2 mb-4">
+        {/* Export Button */}
+        <div className="mb-4">
           <button
             onClick={exportToCSV}
             disabled={paidCount === 0}
@@ -265,17 +207,7 @@ export default function AdminPage() {
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
-            Export All ({paidCount})
-          </button>
-          <button
-            onClick={exportEmailsOnly}
-            disabled={paidCount === 0}
-            className="btn-secondary text-xs py-2 px-3 flex items-center gap-1.5"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-            </svg>
-            Export Emails
+            Export CSV ({paidCount})
           </button>
         </div>
 
