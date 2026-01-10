@@ -259,37 +259,90 @@ export default function AdminPage() {
               No registrations
             </div>
           ) : (
-            <div className="divide-y divide-[var(--border)]">
-              {filteredRegistrations.map((reg) => (
-                <div
-                  key={reg.id}
-                  onClick={() => setSelectedRegistration(reg)}
-                  className="p-3 hover:bg-[var(--surface)] cursor-pointer"
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm font-medium text-[var(--text)]">{reg.name}</span>
-                      <span className="badge text-[10px] capitalize">{reg.plan}</span>
+            <div className="overflow-x-auto">
+              {/* Table Header */}
+              <div className="grid grid-cols-6 gap-2 p-3 bg-[var(--surface)] border-b border-[var(--border)] text-[10px] font-semibold text-[var(--text-muted)] uppercase tracking-wide">
+                <div>Name / Email</div>
+                <div>Type</div>
+                <div>Payment</div>
+                <div>Registered</div>
+                <div>Expiry</div>
+                <div>Status</div>
+              </div>
+              
+              {/* Table Body */}
+              <div className="divide-y divide-[var(--border)]">
+                {filteredRegistrations.map((reg) => (
+                  <div
+                    key={reg.id}
+                    onClick={() => setSelectedRegistration(reg)}
+                    className="grid grid-cols-6 gap-2 p-3 hover:bg-[var(--surface)] cursor-pointer items-center"
+                  >
+                    {/* Name / Email */}
+                    <div>
+                      <p className="text-sm font-medium text-[var(--text)] truncate">{reg.name}</p>
+                      <p className="text-[10px] text-[var(--text-muted)] truncate">{reg.email}</p>
+                    </div>
+                    
+                    {/* Account Type */}
+                    <div>
+                      <span className={`badge text-[10px] ${reg.plan === 'label' ? 'bg-primary/10 text-primary border-primary/20' : 'bg-gray-100 text-gray-600 border-gray-200'}`}>
+                        {reg.plan === 'label' ? '🏢 Label' : '🎤 Artist'}
+                      </span>
+                    </div>
+                    
+                    {/* Payment Status */}
+                    <div>
                       {reg.freeTrial ? (
                         <span className="badge text-[10px] bg-secondary/10 text-secondary border-secondary/20">🎁 Trial</span>
-                      ) : reg.paymentStatus === 'succeeded' && (
-                        <span className="badge badge-success text-[10px]">Paid</span>
+                      ) : reg.paymentStatus === 'succeeded' ? (
+                        <span className="badge badge-success text-[10px]">💳 Paid ${reg.amount}</span>
+                      ) : (
+                        <span className="badge badge-warning text-[10px]">{reg.paymentStatus}</span>
                       )}
                     </div>
-                    <span className={`badge text-[10px] ${reg.accountCreated ? 'badge-success' : 'badge-warning'}`}>
-                      {reg.accountCreated ? 'Done' : 'Pending'}
-                    </span>
+                    
+                    {/* Registration Date */}
+                    <div className="text-xs text-[var(--text)]">
+                      {new Date(reg.createdAt).toLocaleDateString('en-US', { 
+                        month: 'short', 
+                        day: 'numeric',
+                        year: 'numeric'
+                      })}
+                    </div>
+                    
+                    {/* Expiry Date */}
+                    <div className="text-xs">
+                      {reg.freeTrial && reg.trialEndDate ? (
+                        <span className="text-warning">
+                          {new Date(reg.trialEndDate).toLocaleDateString('en-US', { 
+                            month: 'short', 
+                            day: 'numeric',
+                            year: 'numeric'
+                          })}
+                        </span>
+                      ) : reg.paymentStatus === 'succeeded' ? (
+                        <span className="text-[var(--text-muted)]">
+                          {new Date(new Date(reg.createdAt).setFullYear(new Date(reg.createdAt).getFullYear() + 1)).toLocaleDateString('en-US', { 
+                            month: 'short', 
+                            day: 'numeric',
+                            year: 'numeric'
+                          })}
+                        </span>
+                      ) : (
+                        <span className="text-[var(--text-muted)]">—</span>
+                      )}
+                    </div>
+                    
+                    {/* Account Status */}
+                    <div>
+                      <span className={`badge text-[10px] ${reg.accountCreated ? 'badge-success' : 'badge-warning'}`}>
+                        {reg.accountCreated ? '✓ Done' : '⏳ Pending'}
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-3 text-[10px] text-[var(--text-muted)] flex-wrap">
-                    <span>{reg.email}</span>
-                    <span>{reg.freeTrial ? '$0 (trial)' : `$${reg.amount}`}</span>
-                    {reg.freeTrial && reg.trialEndDate && (
-                      <span className="text-warning">Charges: {new Date(reg.trialEndDate).toLocaleDateString()}</span>
-                    )}
-                    <span>{new Date(reg.createdAt).toLocaleDateString()}</span>
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           )}
         </div>
