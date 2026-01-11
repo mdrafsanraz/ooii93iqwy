@@ -11,6 +11,121 @@ const EMAIL_ACCOUNTS = [
   { email: 'registration@rdistro.net', label: 'Registration', icon: '📝', description: 'New Signups' },
 ]
 
+const EMAIL_TEMPLATES = [
+  {
+    id: 'request-links',
+    name: 'Request Links for Onboarding',
+    icon: '🔗',
+    subject: 'Action Required: Complete Your RDistro Onboarding',
+    message: `Hi [NAME],
+
+Thank you for starting your free trial with RDistro! We're excited to have you on board.
+
+To complete your account setup and start distributing your music, we need a few more details from you:
+
+📱 SOCIAL MEDIA LINKS (Required)
+Please provide your Facebook or Instagram profile link:
+• Facebook: ____________________
+• Instagram: ____________________
+
+🎵 MUSIC LINKS (Required)
+Please provide your Spotify artist profile or other music platform link:
+• Spotify: ____________________
+• Apple Music: ____________________
+• YouTube: ____________________
+• Other: ____________________
+
+WHY WE NEED THIS:
+These links help us verify your identity as an artist/label and are required by streaming platforms for proper artist profile linking and verification.
+
+Please reply to this email with the above information, and we'll have your account ready within 24-48 hours.
+
+If you have any questions, feel free to reach out!
+
+Best regards,
+The RDistro Team`
+  },
+  {
+    id: 'account-ready',
+    name: 'Account Ready',
+    icon: '✅',
+    subject: 'Your RDistro Account is Ready!',
+    message: `Hi [NAME],
+
+Great news! Your RDistro account has been set up and is ready to use.
+
+🔐 YOUR LOGIN DETAILS:
+• Login URL: https://app.rdistro.net
+• Email: [EMAIL]
+• Password: [PASSWORD]
+
+📋 NEXT STEPS:
+1. Log in to your dashboard
+2. Upload your first release
+3. Select your distribution platforms
+4. Submit for review
+
+Your music will be live on Spotify, Apple Music, YouTube Music, Amazon Music, and 450+ other platforms within 2-7 days after submission.
+
+Need help? Reply to this email or contact support@rdistro.net
+
+Welcome to RDistro!
+The RDistro Team`
+  },
+  {
+    id: 'missing-info',
+    name: 'Missing Information',
+    icon: '⚠️',
+    subject: 'Missing Information - RDistro Registration',
+    message: `Hi [NAME],
+
+We noticed that some information is missing from your RDistro registration. To proceed with your account setup, please provide:
+
+❌ MISSING:
+• [LIST MISSING ITEMS]
+
+Please reply to this email with the above information.
+
+Thank you!
+The RDistro Team`
+  },
+  {
+    id: 'trial-reminder',
+    name: 'Trial Reminder',
+    icon: '⏰',
+    subject: 'Your RDistro Free Trial Ends Soon',
+    message: `Hi [NAME],
+
+This is a friendly reminder that your RDistro free trial will end on [DATE].
+
+After the trial ends, your saved card will be charged $20/year to continue your subscription and keep your music on all streaming platforms.
+
+If you have any questions or wish to cancel before the trial ends, please reply to this email.
+
+Thank you for being part of RDistro!
+The RDistro Team`
+  },
+  {
+    id: 'payment-issue',
+    name: 'Payment Issue',
+    icon: '💳',
+    subject: 'Payment Issue - Action Required',
+    message: `Hi [NAME],
+
+We were unable to process your payment for your RDistro subscription.
+
+Please update your payment method to continue using RDistro and keep your music on all streaming platforms.
+
+To update your payment:
+1. Contact us at support@rdistro.net
+2. Or reply to this email
+
+If you have any questions, we're here to help!
+
+The RDistro Team`
+  },
+]
+
 interface SentEmail {
   id: string
   from: string
@@ -243,6 +358,31 @@ export default function EmailsPage() {
                 Open Hostinger Mail →
               </a>
             </div>
+          </div>
+        </div>
+
+        {/* Quick Templates */}
+        <div className="card mb-4">
+          <div className="p-3 border-b border-[var(--border)]">
+            <h2 className="font-semibold text-sm text-[var(--text)]">📋 Quick Templates</h2>
+            <p className="text-[10px] text-[var(--text-muted)]">Pre-written email templates for common scenarios</p>
+          </div>
+          <div className="p-3 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
+            {EMAIL_TEMPLATES.map((template) => (
+              <button
+                key={template.id}
+                onClick={() => {
+                  setSubject(template.subject)
+                  setMessage(template.message)
+                  setFromEmail('registration@rdistro.net')
+                  setShowCompose(true)
+                }}
+                className="p-3 rounded-lg bg-[var(--surface)] border border-[var(--border)] hover:border-primary/50 hover:bg-primary/5 transition-colors text-left"
+              >
+                <div className="text-xl mb-1">{template.icon}</div>
+                <p className="text-xs font-medium text-[var(--text)] leading-tight">{template.name}</p>
+              </button>
+            ))}
           </div>
         </div>
 
