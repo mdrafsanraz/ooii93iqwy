@@ -40,6 +40,41 @@
         radial-gradient(circle at 100% 100%, rgba(16, 185, 129, 0.05) 0%, transparent 50%);
     }
 
+    /* Floating music notes */
+    .music-note {
+      position: absolute;
+      font-size: 36px;
+      opacity: 0;
+      animation: floatUp 5s ease-in-out infinite;
+      z-index: 1;
+    }
+
+    .music-note:nth-child(1) { left: 8%; animation-delay: 0s; }
+    .music-note:nth-child(2) { left: 20%; animation-delay: 1s; }
+    .music-note:nth-child(3) { left: 35%; animation-delay: 2s; }
+    .music-note:nth-child(4) { left: 65%; animation-delay: 1.5s; }
+    .music-note:nth-child(5) { left: 80%; animation-delay: 0.5s; }
+    .music-note:nth-child(6) { left: 92%; animation-delay: 2.5s; }
+
+    @keyframes floatUp {
+      0% {
+        bottom: -40px;
+        opacity: 0;
+        transform: translateX(0) rotate(0deg);
+      }
+      15% {
+        opacity: 0.12;
+      }
+      85% {
+        opacity: 0.12;
+      }
+      100% {
+        bottom: 105%;
+        opacity: 0;
+        transform: translateX(15px) rotate(10deg);
+      }
+    }
+
     /* Content */
     .content {
       position: relative;
@@ -219,6 +254,14 @@
   <div class="ad-container">
     <!-- Background -->
     <div class="bg-gradient"></div>
+
+    <!-- Floating music notes -->
+    <div class="music-note">🎵</div>
+    <div class="music-note">🎶</div>
+    <div class="music-note">🎵</div>
+    <div class="music-note">🎶</div>
+    <div class="music-note">🎵</div>
+    <div class="music-note">🎶</div>
 
     <!-- Content -->
     <div class="content">
