@@ -299,6 +299,9 @@ export default function AdminPage() {
             <Link href="/admin/emails" className="text-xs text-primary hover:underline">
               📧 Emails
             </Link>
+            <Link href="/admin/templates" className="text-xs text-primary hover:underline">
+              📋 Templates
+            </Link>
             <button onClick={() => { sessionStorage.removeItem('adminPassword'); setIsAuthenticated(false); }} className="text-xs text-[var(--text-muted)]">
               Logout
             </button>

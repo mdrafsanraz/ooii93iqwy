@@ -172,100 +172,148 @@ export async function POST(request: NextRequest) {
       console.error('Admin email error:', adminEmailError)
     }
 
-    // Customer confirmation email
+    // Customer confirmation email - Modern design with logo
     const customerEmailHtml = `
       <!DOCTYPE html>
       <html>
       <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <style>
-          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8fafc; color: #0f172a; padding: 20px; margin: 0; }
-          .container { max-width: 500px; margin: 0 auto; background: #ffffff; border-radius: 16px; padding: 32px; border: 1px solid #e2e8f0; }
-          .logo { font-size: 24px; font-weight: bold; color: #7c3aed; text-align: center; margin-bottom: 24px; }
-          .icon { text-align: center; margin-bottom: 20px; }
-          .icon-circle { display: inline-flex; align-items: center; justify-content: center; width: 60px; height: 60px; background: #dcfce7; border-radius: 50%; font-size: 28px; }
-          .title { font-size: 22px; font-weight: 700; text-align: center; margin-bottom: 8px; color: #0f172a; }
-          .subtitle { text-align: center; color: #64748b; font-size: 14px; margin-bottom: 24px; }
-          .message { color: #374151; line-height: 1.7; font-size: 15px; margin-bottom: 16px; }
-          .highlight { background: #f0fdf4; border: 1px solid #bbf7d0; padding: 16px; border-radius: 12px; margin: 20px 0; }
-          .highlight-title { font-weight: 600; color: #166534; margin-bottom: 8px; font-size: 14px; }
-          .highlight-text { color: #166534; font-size: 13px; line-height: 1.6; }
-          .trial-warning { background: #fef3c7; border: 1px solid #fcd34d; padding: 16px; border-radius: 12px; margin: 20px 0; }
-          .trial-warning-text { color: #92400e; font-size: 13px; }
-          .summary { background: #f8fafc; border-radius: 12px; padding: 16px; margin: 20px 0; }
-          .summary-row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 14px; border-bottom: 1px solid #e2e8f0; }
-          .summary-row:last-child { border-bottom: none; }
-          .footer { text-align: center; margin-top: 24px; padding-top: 20px; border-top: 1px solid #e2e8f0; color: #94a3b8; font-size: 12px; }
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #0f172a; padding: 40px 20px; margin: 0; }
+          .wrapper { max-width: 520px; margin: 0 auto; }
+          .container { background: #ffffff; border-radius: 24px; padding: 40px 32px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); }
+          .logo-container { text-align: center; margin-bottom: 32px; }
+          .logo-svg { width: 80px; height: 80px; }
+          .logo-text { font-size: 28px; font-weight: 800; background: linear-gradient(135deg, #00d4ff, #5b21b6, #ff6b35); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-top: 12px; letter-spacing: -0.5px; }
+          .celebration { text-align: center; margin-bottom: 24px; }
+          .celebration-badge { display: inline-block; background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 10px 24px; border-radius: 50px; font-weight: 600; font-size: 14px; letter-spacing: 0.5px; }
+          .title { font-size: 26px; font-weight: 800; text-align: center; margin-bottom: 8px; color: #0f172a; line-height: 1.3; }
+          .subtitle { text-align: center; color: #64748b; font-size: 15px; margin-bottom: 32px; }
+          .greeting { color: #374151; line-height: 1.8; font-size: 16px; margin-bottom: 20px; }
+          .message { color: #374151; line-height: 1.8; font-size: 15px; margin-bottom: 16px; }
+          .card { border-radius: 16px; padding: 20px; margin: 24px 0; }
+          .card-success { background: linear-gradient(135deg, #ecfdf5, #d1fae5); border: 1px solid #a7f3d0; }
+          .card-warning { background: linear-gradient(135deg, #fffbeb, #fef3c7); border: 1px solid #fcd34d; }
+          .card-info { background: linear-gradient(135deg, #f0f9ff, #e0f2fe); border: 1px solid #7dd3fc; }
+          .card-title { font-weight: 700; color: #0f172a; margin-bottom: 8px; font-size: 15px; display: flex; align-items: center; gap: 8px; }
+          .card-text { color: #475569; font-size: 14px; line-height: 1.6; }
+          .summary { background: #f8fafc; border-radius: 16px; padding: 24px; margin: 24px 0; border: 1px solid #e2e8f0; }
+          .summary-title { font-weight: 700; color: #0f172a; margin-bottom: 16px; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
+          .summary-row { display: flex; justify-content: space-between; padding: 12px 0; font-size: 15px; border-bottom: 1px solid #e2e8f0; }
+          .summary-row:last-child { border-bottom: none; padding-bottom: 0; }
+          .summary-label { color: #64748b; }
+          .summary-value { font-weight: 600; color: #0f172a; }
+          .summary-value-highlight { font-weight: 700; color: #10b981; }
+          .cta-section { text-align: center; margin: 32px 0; }
+          .cta-text { color: #64748b; font-size: 14px; margin-bottom: 16px; }
+          .platforms { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
+          .platform { background: #f1f5f9; color: #475569; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; }
+          .signature { margin-top: 32px; padding-top: 24px; border-top: 1px solid #e2e8f0; }
+          .signature-text { color: #374151; font-size: 15px; line-height: 1.6; }
+          .signature-name { font-weight: 700; color: #0f172a; margin-top: 8px; }
+          .footer { text-align: center; margin-top: 32px; padding: 24px 0 0; border-top: 1px solid #e2e8f0; }
+          .footer-logo { font-size: 18px; font-weight: 700; color: #7c3aed; margin-bottom: 8px; }
+          .footer-text { color: #94a3b8; font-size: 12px; line-height: 1.8; }
+          .footer-link { color: #7c3aed; text-decoration: none; font-weight: 500; }
+          .wave-bars { display: flex; justify-content: center; align-items: flex-end; gap: 4px; height: 40px; margin-bottom: 8px; }
+          .wave-bar { width: 6px; background: linear-gradient(to top, #00d4ff, #5b21b6, #ff6b35); border-radius: 3px; }
         </style>
       </head>
       <body>
-        <div class="container">
-          <div class="logo">RDistro</div>
-          
-          <div class="icon">
-            <div class="icon-circle">${freeTrial ? '🎁' : '✓'}</div>
-          </div>
-          
-          <h1 class="title">${freeTrial ? 'Free Trial Started!' : 'We Received Your Details!'}</h1>
-          <p class="subtitle">Thank you for registering with RDistro</p>
-          
-          <p class="message">Hi ${name},</p>
-          
-          <p class="message">
-            ${freeTrial 
-              ? 'Your 1-month free trial has been activated! Your card has been saved and will be charged after the trial period ends.'
-              : 'We have successfully received your registration and payment. Your account is now being prepared by our team.'
-            }
-          </p>
-          
-          ${freeTrial && trialEndDate ? `
-          <div class="trial-warning">
-            <div class="trial-warning-text">
-              <strong>⚠️ Trial Information:</strong><br>
-              Your card will be automatically charged <strong>$20/year</strong> on <strong>${new Date(trialEndDate).toLocaleDateString()}</strong> unless you cancel before then.
+        <div class="wrapper">
+          <div class="container">
+            <div class="logo-container">
+              <div class="wave-bars">
+                <div class="wave-bar" style="height: 20px;"></div>
+                <div class="wave-bar" style="height: 30px;"></div>
+                <div class="wave-bar" style="height: 40px;"></div>
+                <div class="wave-bar" style="height: 24px;"></div>
+                <div class="wave-bar" style="height: 36px;"></div>
+              </div>
+              <div class="logo-text">RDistro</div>
             </div>
-          </div>
-          ` : ''}
-          
-          <div class="highlight">
-            <div class="highlight-title">📧 What's Next?</div>
-            <div class="highlight-text">
-              Your account is being set up. You will receive your account details and login credentials via email within <strong>24-48 hours</strong>.
+            
+            <div class="celebration">
+              <span class="celebration-badge">${freeTrial ? '🎁 FREE TRIAL ACTIVATED' : '🎉 REGISTRATION SUCCESSFUL'}</span>
             </div>
-          </div>
-          
-          <div class="summary">
-            <div class="summary-row">
-              <span style="color: #64748b;">Plan</span>
-              <span style="font-weight: 600;">${planName} ${freeTrial ? '(Free Trial)' : ''}</span>
-            </div>
-            <div class="summary-row">
-              <span style="color: #64748b;">${plan === 'artist' ? 'Artist' : 'Label'}</span>
-              <span style="font-weight: 600;">${entityName}</span>
-            </div>
-            <div class="summary-row">
-              <span style="color: #64748b;">${freeTrial ? 'Charged Today' : 'Amount'}</span>
-              <span style="font-weight: 600; color: ${freeTrial ? '#10b981' : '#0f172a'};">$${amount}${freeTrial ? '' : '/year'}</span>
-            </div>
-            ${freeTrial ? `
-            <div class="summary-row">
-              <span style="color: #64748b;">After Trial</span>
-              <span style="font-weight: 600;">$20/year</span>
+            
+            <h1 class="title">${freeTrial ? 'Your Free Trial Has Started!' : 'Welcome to RDistro!'}</h1>
+            <p class="subtitle">Your music distribution journey begins now</p>
+            
+            <p class="greeting">Hi <strong>${name}</strong>,</p>
+            
+            <p class="message">
+              ${freeTrial 
+                ? 'Congratulations! Your 1-month free trial is now active. Your payment method has been securely saved for when the trial ends.'
+                : 'Thank you for choosing RDistro! We\'ve received your registration and payment. Our team is now setting up your account.'
+              }
+            </p>
+            
+            ${freeTrial && trialEndDate ? `
+            <div class="card card-warning">
+              <div class="card-title">⏰ Trial Reminder</div>
+              <div class="card-text">
+                Your card will be automatically charged <strong>$20/year</strong> on <strong>${new Date(trialEndDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</strong>. You can cancel anytime before this date.
+              </div>
             </div>
             ` : ''}
-          </div>
-          
-          <p class="message">
-            Once your account is ready, you can start distributing your music to Spotify, Apple Music, and 150+ streaming platforms worldwide.
-          </p>
-          
-          <p class="message" style="margin-top: 24px;">
-            Welcome to RDistro! 🎵<br>
-            <strong>The RDistro Team</strong>
-          </p>
-          
-          <div class="footer">
-            <p>© RDistro - Music Distribution</p>
-            <p><a href="https://rdistro.net" style="color: #7c3aed;">rdistro.net</a></p>
+            
+            <div class="card card-info">
+              <div class="card-title">📧 What Happens Next?</div>
+              <div class="card-text">
+                Your account is being prepared. You'll receive your <strong>login credentials</strong> and access details via email within <strong>24-48 hours</strong>.
+              </div>
+            </div>
+            
+            <div class="summary">
+              <div class="summary-title">📋 Order Summary</div>
+              <div class="summary-row">
+                <span class="summary-label">Plan</span>
+                <span class="summary-value">${planName} ${freeTrial ? '(Trial)' : ''}</span>
+              </div>
+              <div class="summary-row">
+                <span class="summary-label">${plan === 'artist' ? 'Artist Name' : 'Label Name'}</span>
+                <span class="summary-value">${entityName}</span>
+              </div>
+              <div class="summary-row">
+                <span class="summary-label">${freeTrial ? 'Today\'s Charge' : 'Amount Paid'}</span>
+                <span class="${freeTrial ? 'summary-value-highlight' : 'summary-value'}">$${amount}${freeTrial ? ' (Free!)' : '/year'}</span>
+              </div>
+              ${freeTrial ? `
+              <div class="summary-row">
+                <span class="summary-label">After Trial</span>
+                <span class="summary-value">$20/year</span>
+              </div>
+              ` : ''}
+            </div>
+            
+            <div class="card card-success">
+              <div class="card-title">🚀 Get Ready to Distribute</div>
+              <div class="card-text">
+                Once your account is ready, you can distribute your music to all major streaming platforms worldwide.
+              </div>
+              <div class="platforms">
+                <span class="platform">Spotify</span>
+                <span class="platform">Apple Music</span>
+                <span class="platform">YouTube Music</span>
+                <span class="platform">Amazon</span>
+                <span class="platform">+150 more</span>
+              </div>
+            </div>
+            
+            <div class="signature">
+              <p class="signature-text">We're excited to have you on board! If you have any questions, feel free to reach out.</p>
+              <p class="signature-name">🎵 The RDistro Team</p>
+            </div>
+            
+            <div class="footer">
+              <div class="footer-logo">RDistro</div>
+              <p class="footer-text">
+                Music Distribution Made Simple<br>
+                <a href="https://rdistro.net" class="footer-link">rdistro.net</a>
+              </p>
+            </div>
           </div>
         </div>
       </body>
@@ -278,7 +326,7 @@ export async function POST(request: NextRequest) {
       const customerResult = await resend.emails.send({
         from: 'RDistro <registration@rdistro.net>',
         to: email,
-        subject: freeTrial ? '🎁 Your Free Trial Has Started - RDistro' : '✓ We Received Your Registration - RDistro',
+        subject: freeTrial ? '🎁 Your Free Trial Has Started - RDistro' : '🎉 Welcome to RDistro - Registration Successful!',
         html: customerEmailHtml,
       })
       console.log('Customer email result:', customerResult)
