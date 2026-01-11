@@ -434,43 +434,44 @@ export default function AdminPage() {
         </div>
 
         {/* Settings & Quick Actions */}
-        <div className="grid grid-cols-2 gap-4 mb-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
           {/* Trial Toggle */}
-          <div className="card p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-[var(--text)]">Free Trial</p>
-                <p className="text-[10px] text-[var(--text-muted)]">Allow new Label registrations with 30-day trial</p>
+          <div className="card p-3 sm:p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-[var(--text)]">🎁 Free Trial</p>
+                <p className="text-[10px] text-[var(--text-muted)] hidden sm:block">Allow new Label registrations with 30-day trial</p>
+                <p className="text-[10px] text-[var(--text-muted)] sm:hidden">30-day trial for Labels</p>
               </div>
               <button
                 onClick={toggleTrial}
                 disabled={savingSettings}
-                className={`relative w-14 h-7 rounded-full transition-colors ${
+                className={`relative w-12 h-6 sm:w-14 sm:h-7 rounded-full transition-colors flex-shrink-0 ${
                   trialEnabled ? 'bg-success' : 'bg-gray-300'
                 } ${savingSettings ? 'opacity-50' : ''}`}
               >
                 <span
-                  className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow transition-transform ${
-                    trialEnabled ? 'left-8' : 'left-1'
+                  className={`absolute top-0.5 sm:top-1 w-5 h-5 bg-white rounded-full shadow transition-transform ${
+                    trialEnabled ? 'left-6 sm:left-8' : 'left-0.5 sm:left-1'
                   }`}
                 />
               </button>
             </div>
-            <p className={`text-xs mt-2 ${trialEnabled ? 'text-success' : 'text-[var(--text-muted)]'}`}>
-              {trialEnabled ? '✓ Trial is enabled for new users' : '✕ Trial is disabled'}
+            <p className={`text-[10px] sm:text-xs mt-2 ${trialEnabled ? 'text-success' : 'text-[var(--text-muted)]'}`}>
+              {trialEnabled ? '✓ Enabled' : '✕ Disabled'}
             </p>
           </div>
 
           {/* Quick Email Access */}
-          <Link href="/admin/emails" className="card p-4 flex items-center justify-between hover:border-primary/50 transition-colors">
-            <div className="flex items-center gap-3">
-              <span className="text-2xl">📧</span>
+          <Link href="/admin/emails" className="card p-3 sm:p-4 flex items-center justify-between hover:border-primary/50 transition-colors">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <span className="text-xl sm:text-2xl">📧</span>
               <div>
-                <p className="text-sm font-medium text-[var(--text)]">Email Management</p>
-                <p className="text-[10px] text-[var(--text-muted)]">Send emails to customers via Resend</p>
+                <p className="text-sm font-medium text-[var(--text)]">Emails</p>
+                <p className="text-[10px] text-[var(--text-muted)] hidden sm:block">Send emails to customers via Resend</p>
               </div>
             </div>
-            <span className="text-primary text-sm">Open →</span>
+            <span className="text-primary text-xs sm:text-sm">Open →</span>
           </Link>
         </div>
 

@@ -237,15 +237,15 @@ export default function RegisterPage() {
                 >
                   <h2 className="text-lg font-bold text-[var(--text)] text-center mb-4">Choose Plan</h2>
 
-                  {/* Free Trial Toggle - Only show if trial is enabled */}
-                  {trialEnabled && (
+                  {/* Free Trial Toggle */}
+                  {trialEnabled ? (
                     <div className="mb-4 p-3 rounded-xl bg-gradient-to-r from-primary/10 to-secondary/10 border border-primary/20">
-                      <label className="flex items-center justify-between cursor-pointer">
-                        <div>
+                      <label className="flex items-center justify-between cursor-pointer gap-3">
+                        <div className="flex-1 min-w-0">
                           <p className="font-medium text-sm text-[var(--text)]">🎁 1 Month Free Trial</p>
                           <p className="text-[10px] text-[var(--text-muted)]">Label plan only • Auto-charges after 30 days</p>
                         </div>
-                        <div className="relative">
+                        <div className="relative flex-shrink-0">
                           <input
                             type="checkbox"
                             checked={freeTrial}
@@ -257,6 +257,16 @@ export default function RegisterPage() {
                           </div>
                         </div>
                       </label>
+                    </div>
+                  ) : (
+                    <div className="mb-4 p-3 rounded-xl bg-gray-100 border border-gray-200">
+                      <div className="flex items-center gap-2">
+                        <span className="text-gray-400">🎁</span>
+                        <div>
+                          <p className="font-medium text-sm text-gray-400">Free Trial Unavailable</p>
+                          <p className="text-[10px] text-gray-400">Trial is not available at this time</p>
+                        </div>
+                      </div>
                     </div>
                   )}
 
