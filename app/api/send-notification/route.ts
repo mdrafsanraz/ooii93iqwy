@@ -172,91 +172,100 @@ export async function POST(request: NextRequest) {
       console.error('Admin email error:', adminEmailError)
     }
 
-    // Customer confirmation email - Modern design with logo
+    // Customer confirmation email - Dark mode compatible
     const customerEmailHtml = `
       <!DOCTYPE html>
       <html>
       <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="color-scheme" content="light">
+        <meta name="supported-color-schemes" content="light">
+        <!--[if mso]>
+        <style type="text/css">
+          .fallback-font { font-family: Arial, sans-serif !important; }
+        </style>
+        <![endif]-->
         <style>
-          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #0f172a; padding: 40px 20px; margin: 0; }
+          :root { color-scheme: light only; }
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; background-color: #7c3aed !important; color: #1f2937; padding: 40px 20px; margin: 0; }
           .wrapper { max-width: 520px; margin: 0 auto; }
-          .container { background: #ffffff; border-radius: 24px; padding: 40px 32px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); }
+          .container { background-color: #ffffff !important; border-radius: 24px; padding: 40px 32px; }
           .logo-container { text-align: center; margin-bottom: 32px; }
-          .logo-svg { width: 80px; height: 80px; }
-          .logo-text { font-size: 28px; font-weight: 800; background: linear-gradient(135deg, #00d4ff, #5b21b6, #ff6b35); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-top: 12px; letter-spacing: -0.5px; }
+          .logo-bars { display: inline-block; }
+          .logo-bar { display: inline-block; width: 8px; border-radius: 4px; margin: 0 2px; vertical-align: bottom; }
+          .logo-text { font-size: 32px; font-weight: 800; color: #7c3aed !important; margin-top: 12px; letter-spacing: -0.5px; }
           .celebration { text-align: center; margin-bottom: 24px; }
-          .celebration-badge { display: inline-block; background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 10px 24px; border-radius: 50px; font-weight: 600; font-size: 14px; letter-spacing: 0.5px; }
-          .title { font-size: 26px; font-weight: 800; text-align: center; margin-bottom: 8px; color: #0f172a; line-height: 1.3; }
-          .subtitle { text-align: center; color: #64748b; font-size: 15px; margin-bottom: 32px; }
-          .greeting { color: #374151; line-height: 1.8; font-size: 16px; margin-bottom: 20px; }
-          .message { color: #374151; line-height: 1.8; font-size: 15px; margin-bottom: 16px; }
+          .celebration-badge { display: inline-block; background-color: #10b981 !important; color: #ffffff !important; padding: 12px 28px; border-radius: 50px; font-weight: 700; font-size: 14px; letter-spacing: 0.5px; }
+          .title { font-size: 28px; font-weight: 800; text-align: center; margin-bottom: 8px; color: #1f2937 !important; line-height: 1.3; background-color: #ffffff !important; }
+          .subtitle { text-align: center; color: #6b7280 !important; font-size: 15px; margin-bottom: 32px; background-color: #ffffff !important; }
+          .greeting { color: #374151 !important; line-height: 1.8; font-size: 16px; margin-bottom: 20px; background-color: #ffffff !important; }
+          .message { color: #374151 !important; line-height: 1.8; font-size: 15px; margin-bottom: 16px; background-color: #ffffff !important; }
           .card { border-radius: 16px; padding: 20px; margin: 24px 0; }
-          .card-success { background: linear-gradient(135deg, #ecfdf5, #d1fae5); border: 1px solid #a7f3d0; }
-          .card-warning { background: linear-gradient(135deg, #fffbeb, #fef3c7); border: 1px solid #fcd34d; }
-          .card-info { background: linear-gradient(135deg, #f0f9ff, #e0f2fe); border: 1px solid #7dd3fc; }
-          .card-title { font-weight: 700; color: #0f172a; margin-bottom: 8px; font-size: 15px; display: flex; align-items: center; gap: 8px; }
-          .card-text { color: #475569; font-size: 14px; line-height: 1.6; }
-          .summary { background: #f8fafc; border-radius: 16px; padding: 24px; margin: 24px 0; border: 1px solid #e2e8f0; }
-          .summary-title { font-weight: 700; color: #0f172a; margin-bottom: 16px; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
-          .summary-row { display: flex; justify-content: space-between; padding: 12px 0; font-size: 15px; border-bottom: 1px solid #e2e8f0; }
-          .summary-row:last-child { border-bottom: none; padding-bottom: 0; }
-          .summary-label { color: #64748b; }
-          .summary-value { font-weight: 600; color: #0f172a; }
-          .summary-value-highlight { font-weight: 700; color: #10b981; }
-          .cta-section { text-align: center; margin: 32px 0; }
-          .cta-text { color: #64748b; font-size: 14px; margin-bottom: 16px; }
-          .platforms { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
-          .platform { background: #f1f5f9; color: #475569; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; }
-          .signature { margin-top: 32px; padding-top: 24px; border-top: 1px solid #e2e8f0; }
-          .signature-text { color: #374151; font-size: 15px; line-height: 1.6; }
-          .signature-name { font-weight: 700; color: #0f172a; margin-top: 8px; }
-          .footer { text-align: center; margin-top: 32px; padding: 24px 0 0; border-top: 1px solid #e2e8f0; }
-          .footer-logo { font-size: 18px; font-weight: 700; color: #7c3aed; margin-bottom: 8px; }
-          .footer-text { color: #94a3b8; font-size: 12px; line-height: 1.8; }
-          .footer-link { color: #7c3aed; text-decoration: none; font-weight: 500; }
-          .logo-svg { margin: 0 auto 12px; }
+          .card-success { background-color: #dcfce7 !important; border: 2px solid #86efac; }
+          .card-warning { background-color: #fef3c7 !important; border: 2px solid #fcd34d; }
+          .card-info { background-color: #dbeafe !important; border: 2px solid #93c5fd; }
+          .card-title { font-weight: 700; color: #1f2937 !important; margin-bottom: 10px; font-size: 16px; }
+          .card-text { color: #374151 !important; font-size: 14px; line-height: 1.7; }
+          .summary { background-color: #f3f4f6 !important; border-radius: 16px; padding: 24px; margin: 24px 0; border: 2px solid #e5e7eb; }
+          .summary-title { font-weight: 700; color: #1f2937 !important; margin-bottom: 16px; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
+          .summary-row { padding: 14px 0; font-size: 15px; border-bottom: 1px solid #d1d5db; }
+          .summary-row-last { border-bottom: none; padding-bottom: 0; }
+          .summary-label { color: #6b7280 !important; }
+          .summary-value { font-weight: 700; color: #1f2937 !important; float: right; }
+          .summary-value-highlight { font-weight: 700; color: #059669 !important; float: right; }
+          .platforms { text-align: center; margin-top: 16px; }
+          .platform { display: inline-block; background-color: #e5e7eb !important; color: #374151 !important; padding: 8px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; margin: 4px; }
+          .signature { margin-top: 32px; padding-top: 24px; border-top: 2px solid #e5e7eb; background-color: #ffffff !important; }
+          .signature-text { color: #374151 !important; font-size: 15px; line-height: 1.6; }
+          .signature-name { font-weight: 700; color: #1f2937 !important; margin-top: 8px; }
+          .footer { text-align: center; margin-top: 32px; padding: 24px 0 0; border-top: 2px solid #e5e7eb; background-color: #ffffff !important; }
+          .footer-logo { font-size: 20px; font-weight: 800; color: #7c3aed !important; margin-bottom: 8px; }
+          .footer-text { color: #6b7280 !important; font-size: 12px; line-height: 1.8; }
+          .footer-link { color: #7c3aed !important; text-decoration: none; font-weight: 600; }
         </style>
       </head>
-      <body>
+      <body style="background-color: #7c3aed !important;">
         <div class="wrapper">
-          <div class="container">
+          <div class="container" style="background-color: #ffffff !important;">
             <div class="logo-container">
-              <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style="width: 80px; height: 80px; margin: 0 auto; display: block;">
-                <defs>
-                  <linearGradient id="waveGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" style="stop-color:#00d4ff;stop-opacity:1" />
-                    <stop offset="50%" style="stop-color:#5b21b6;stop-opacity:1" />
-                    <stop offset="100%" style="stop-color:#ff6b35;stop-opacity:1" />
-                  </linearGradient>
-                </defs>
-                <g transform="translate(20, 30)">
-                  <rect x="0" y="15" width="4" height="30" fill="url(#waveGrad)" rx="2"/>
-                  <rect x="10" y="10" width="4" height="40" fill="url(#waveGrad)" rx="2"/>
-                  <rect x="20" y="5" width="4" height="50" fill="url(#waveGrad)" rx="2"/>
-                  <rect x="30" y="12" width="4" height="36" fill="url(#waveGrad)" rx="2"/>
-                  <rect x="40" y="8" width="4" height="44" fill="url(#waveGrad)" rx="2"/>
-                  <path d="M52 22 L62 17 L60 19.5 L68 19.5 L68 27.5 L60 27.5 L62 30 Z" fill="url(#waveGrad)" opacity="0.9"/>
-                  <path d="M52 35 L62 30 L60 32.5 L68 32.5 L68 40.5 L60 40.5 L62 43 Z" fill="url(#waveGrad)" opacity="0.7"/>
-                </g>
-                <circle cx="82" cy="32" r="3" fill="#8b5cf6" opacity="0.7"/>
-                <circle cx="88" cy="48" r="2" fill="#ec4899" opacity="0.5"/>
-                <circle cx="92" cy="38" r="1.5" fill="#6366f1" opacity="0.6"/>
-              </svg>
-              <div class="logo-text">RDistro</div>
+              <!--[if mso]>
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0" align="center">
+                <tr>
+                  <td style="background: #00d4ff; width: 8px; height: 30px; border-radius: 4px;"></td>
+                  <td width="4"></td>
+                  <td style="background: #5b21b6; width: 8px; height: 45px; border-radius: 4px;"></td>
+                  <td width="4"></td>
+                  <td style="background: #7c3aed; width: 8px; height: 55px; border-radius: 4px;"></td>
+                  <td width="4"></td>
+                  <td style="background: #a855f7; width: 8px; height: 38px; border-radius: 4px;"></td>
+                  <td width="4"></td>
+                  <td style="background: #ff6b35; width: 8px; height: 48px; border-radius: 4px;"></td>
+                </tr>
+              </table>
+              <![endif]-->
+              <!--[if !mso]><!-->
+              <div class="logo-bars" style="height: 60px; display: flex; align-items: flex-end; justify-content: center; gap: 4px;">
+                <div style="width: 8px; height: 30px; background: linear-gradient(180deg, #00d4ff, #5b21b6); border-radius: 4px;"></div>
+                <div style="width: 8px; height: 45px; background: linear-gradient(180deg, #00d4ff, #5b21b6); border-radius: 4px;"></div>
+                <div style="width: 8px; height: 55px; background: linear-gradient(180deg, #5b21b6, #7c3aed); border-radius: 4px;"></div>
+                <div style="width: 8px; height: 38px; background: linear-gradient(180deg, #7c3aed, #a855f7); border-radius: 4px;"></div>
+                <div style="width: 8px; height: 48px; background: linear-gradient(180deg, #a855f7, #ff6b35); border-radius: 4px;"></div>
+              </div>
+              <!--<![endif]-->
+              <div class="logo-text" style="color: #7c3aed !important;">RDistro</div>
             </div>
             
             <div class="celebration">
-              <span class="celebration-badge">${freeTrial ? '🎁 FREE TRIAL ACTIVATED' : '🎉 REGISTRATION SUCCESSFUL'}</span>
+              <span class="celebration-badge" style="background-color: #10b981 !important; color: #ffffff !important;">${freeTrial ? '🎁 FREE TRIAL ACTIVATED' : '🎉 REGISTRATION SUCCESSFUL'}</span>
             </div>
             
-            <h1 class="title">${freeTrial ? 'Your Free Trial Has Started!' : 'Welcome to RDistro!'}</h1>
-            <p class="subtitle">Your music distribution journey begins now</p>
+            <h1 class="title" style="color: #1f2937 !important; background-color: #ffffff !important;">${freeTrial ? 'Your Free Trial Has Started!' : 'Welcome to RDistro!'}</h1>
+            <p class="subtitle" style="color: #6b7280 !important; background-color: #ffffff !important;">Your music distribution journey begins now</p>
             
-            <p class="greeting">Hi <strong>${name}</strong>,</p>
+            <p class="greeting" style="color: #374151 !important; background-color: #ffffff !important;">Hi <strong style="color: #1f2937 !important;">${name}</strong>,</p>
             
-            <p class="message">
+            <p class="message" style="color: #374151 !important; background-color: #ffffff !important;">
               ${freeTrial 
                 ? 'Congratulations! Your 1-month free trial is now active. Your payment method has been securely saved for when the trial ends.'
                 : 'Thank you for choosing RDistro! We\'ve received your registration and payment. Our team is now setting up your account.'
@@ -264,67 +273,67 @@ export async function POST(request: NextRequest) {
             </p>
             
             ${freeTrial && trialEndDate ? `
-            <div class="card card-warning">
-              <div class="card-title">⏰ Trial Reminder</div>
-              <div class="card-text">
+            <div class="card card-warning" style="background-color: #fef3c7 !important; border: 2px solid #fcd34d; border-radius: 16px; padding: 20px;">
+              <div class="card-title" style="color: #92400e !important; font-weight: 700; margin-bottom: 10px;">⏰ Trial Reminder</div>
+              <div class="card-text" style="color: #78350f !important; font-size: 14px; line-height: 1.7;">
                 Your card will be automatically charged <strong>$20/year</strong> on <strong>${new Date(trialEndDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</strong>. You can cancel anytime before this date.
               </div>
             </div>
             ` : ''}
             
-            <div class="card card-info">
-              <div class="card-title">📧 What Happens Next?</div>
-              <div class="card-text">
+            <div class="card card-info" style="background-color: #dbeafe !important; border: 2px solid #93c5fd; border-radius: 16px; padding: 20px;">
+              <div class="card-title" style="color: #1e40af !important; font-weight: 700; margin-bottom: 10px;">📧 What Happens Next?</div>
+              <div class="card-text" style="color: #1e3a8a !important; font-size: 14px; line-height: 1.7;">
                 Your account is being prepared. You'll receive your <strong>login credentials</strong> and access details via email within <strong>24-48 hours</strong>.
               </div>
             </div>
             
-            <div class="summary">
-              <div class="summary-title">📋 Order Summary</div>
-              <div class="summary-row">
-                <span class="summary-label">Plan</span>
-                <span class="summary-value">${planName} ${freeTrial ? '(Trial)' : ''}</span>
+            <div class="summary" style="background-color: #f3f4f6 !important; border: 2px solid #e5e7eb; border-radius: 16px; padding: 24px;">
+              <div class="summary-title" style="color: #1f2937 !important; font-weight: 700; margin-bottom: 16px; font-size: 14px; text-transform: uppercase;">📋 Order Summary</div>
+              <div class="summary-row" style="padding: 14px 0; border-bottom: 1px solid #d1d5db;">
+                <span class="summary-label" style="color: #6b7280 !important;">Plan</span>
+                <span class="summary-value" style="color: #1f2937 !important; font-weight: 700; float: right;">${planName} ${freeTrial ? '(Trial)' : ''}</span>
               </div>
-              <div class="summary-row">
-                <span class="summary-label">${plan === 'artist' ? 'Artist Name' : 'Label Name'}</span>
-                <span class="summary-value">${entityName}</span>
+              <div class="summary-row" style="padding: 14px 0; border-bottom: 1px solid #d1d5db;">
+                <span class="summary-label" style="color: #6b7280 !important;">${plan === 'artist' ? 'Artist Name' : 'Label Name'}</span>
+                <span class="summary-value" style="color: #1f2937 !important; font-weight: 700; float: right;">${entityName}</span>
               </div>
-              <div class="summary-row">
-                <span class="summary-label">${freeTrial ? 'Today\'s Charge' : 'Amount Paid'}</span>
-                <span class="${freeTrial ? 'summary-value-highlight' : 'summary-value'}">$${amount}${freeTrial ? ' (Free!)' : '/year'}</span>
+              <div class="summary-row" style="padding: 14px 0; border-bottom: ${freeTrial ? '1px solid #d1d5db' : 'none'};">
+                <span class="summary-label" style="color: #6b7280 !important;">${freeTrial ? 'Today\'s Charge' : 'Amount Paid'}</span>
+                <span style="color: ${freeTrial ? '#059669' : '#1f2937'} !important; font-weight: 700; float: right;">$${amount}${freeTrial ? ' (Free!)' : '/year'}</span>
               </div>
               ${freeTrial ? `
-              <div class="summary-row">
-                <span class="summary-label">After Trial</span>
-                <span class="summary-value">$20/year</span>
+              <div class="summary-row" style="padding: 14px 0;">
+                <span class="summary-label" style="color: #6b7280 !important;">After Trial</span>
+                <span class="summary-value" style="color: #1f2937 !important; font-weight: 700; float: right;">$20/year</span>
               </div>
               ` : ''}
             </div>
             
-            <div class="card card-success">
-              <div class="card-title">🚀 Get Ready to Distribute</div>
-              <div class="card-text">
+            <div class="card card-success" style="background-color: #dcfce7 !important; border: 2px solid #86efac; border-radius: 16px; padding: 20px;">
+              <div class="card-title" style="color: #166534 !important; font-weight: 700; margin-bottom: 10px;">🚀 Get Ready to Distribute</div>
+              <div class="card-text" style="color: #15803d !important; font-size: 14px; line-height: 1.7;">
                 Once your account is ready, you can distribute your music to all major streaming platforms worldwide.
               </div>
-              <div class="platforms">
-                <span class="platform">Spotify</span>
-                <span class="platform">Apple Music</span>
-                <span class="platform">YouTube Music</span>
-                <span class="platform">Amazon</span>
-                <span class="platform">+450 more</span>
+              <div class="platforms" style="text-align: center; margin-top: 16px;">
+                <span style="display: inline-block; background-color: #bbf7d0 !important; color: #166534 !important; padding: 8px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; margin: 4px;">Spotify</span>
+                <span style="display: inline-block; background-color: #bbf7d0 !important; color: #166534 !important; padding: 8px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; margin: 4px;">Apple Music</span>
+                <span style="display: inline-block; background-color: #bbf7d0 !important; color: #166534 !important; padding: 8px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; margin: 4px;">YouTube Music</span>
+                <span style="display: inline-block; background-color: #bbf7d0 !important; color: #166534 !important; padding: 8px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; margin: 4px;">Amazon</span>
+                <span style="display: inline-block; background-color: #bbf7d0 !important; color: #166534 !important; padding: 8px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; margin: 4px;">+450 more</span>
               </div>
             </div>
             
-            <div class="signature">
-              <p class="signature-text">We're excited to have you on board! If you have any questions, feel free to reach out.</p>
-              <p class="signature-name">🎵 The RDistro Team</p>
+            <div class="signature" style="background-color: #ffffff !important; border-top: 2px solid #e5e7eb; margin-top: 32px; padding-top: 24px;">
+              <p class="signature-text" style="color: #374151 !important; font-size: 15px; line-height: 1.6;">We're excited to have you on board! If you have any questions, feel free to reach out.</p>
+              <p class="signature-name" style="color: #1f2937 !important; font-weight: 700; margin-top: 8px;">🎵 The RDistro Team</p>
             </div>
             
-            <div class="footer">
-              <div class="footer-logo">RDistro</div>
-              <p class="footer-text">
+            <div class="footer" style="background-color: #ffffff !important; border-top: 2px solid #e5e7eb; text-align: center; margin-top: 32px; padding: 24px 0 0;">
+              <div class="footer-logo" style="color: #7c3aed !important; font-size: 20px; font-weight: 800; margin-bottom: 8px;">RDistro</div>
+              <p class="footer-text" style="color: #6b7280 !important; font-size: 12px; line-height: 1.8;">
                 Music Distribution Made Simple<br>
-                <a href="https://rdistro.net" class="footer-link">rdistro.net</a>
+                <a href="https://rdistro.net" style="color: #7c3aed !important; text-decoration: none; font-weight: 600;">rdistro.net</a>
               </p>
             </div>
           </div>
