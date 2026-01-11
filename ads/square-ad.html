@@ -204,7 +204,16 @@
     }
 
     .platform-icon {
-      font-size: 40px;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .platform-icon svg {
+      width: 100%;
+      height: 100%;
     }
 
     .platform-name {
@@ -386,41 +395,98 @@
       <!-- Logo -->
       <div class="logo-container">
         <div class="logo">
-          <div class="logo-icon">
-            <div class="logo-bars">
-              <div class="logo-bar"></div>
-              <div class="logo-bar"></div>
-              <div class="logo-bar"></div>
-              <div class="logo-bar"></div>
-            </div>
-          </div>
-          <div class="logo-text">RDistro</div>
+          <svg viewBox="0 0 300 100" xmlns="http://www.w3.org/2000/svg" style="width: 320px; height: 107px;">
+            <defs>
+              <linearGradient id="waveGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" style="stop-color:#7c3aed;stop-opacity:1" />
+                <stop offset="50%" style="stop-color:#a855f7;stop-opacity:1" />
+                <stop offset="100%" style="stop-color:#7c3aed;stop-opacity:1" />
+              </linearGradient>
+            </defs>
+            
+            <!-- Animated sound wave visualization -->
+            <g transform="translate(20, 30)">
+              <rect x="0" y="20" width="4" height="20" fill="url(#waveGradient)" rx="2">
+                <animate attributeName="height" values="20;35;20" dur="1.5s" repeatCount="indefinite"/>
+                <animate attributeName="y" values="20;12.5;20" dur="1.5s" repeatCount="indefinite"/>
+              </rect>
+              <rect x="10" y="15" width="4" height="30" fill="url(#waveGradient)" rx="2">
+                <animate attributeName="height" values="30;40;30" dur="1.8s" repeatCount="indefinite"/>
+                <animate attributeName="y" values="15;10;15" dur="1.8s" repeatCount="indefinite"/>
+              </rect>
+              <rect x="20" y="10" width="4" height="40" fill="url(#waveGradient)" rx="2">
+                <animate attributeName="height" values="40;50;40" dur="1.2s" repeatCount="indefinite"/>
+                <animate attributeName="y" values="10;5;10" dur="1.2s" repeatCount="indefinite"/>
+              </rect>
+              <rect x="30" y="18" width="4" height="24" fill="url(#waveGradient)" rx="2">
+                <animate attributeName="height" values="24;38;24" dur="2s" repeatCount="indefinite"/>
+                <animate attributeName="y" values="18;11;18" dur="2s" repeatCount="indefinite"/>
+              </rect>
+              <rect x="40" y="12" width="4" height="36" fill="url(#waveGradient)" rx="2">
+                <animate attributeName="height" values="36;45;36" dur="1.6s" repeatCount="indefinite"/>
+                <animate attributeName="y" values="12;7.5;12" dur="1.6s" repeatCount="indefinite"/>
+              </rect>
+            </g>
+            
+            <!-- Company name -->
+            <text x="75" y="52" font-family="Space Grotesk, Arial, sans-serif" font-weight="700" font-size="28" fill="#0f172a">RDISTRO</text>
+            <text x="75" y="70" font-family="Space Grotesk, Arial, sans-serif" font-weight="500" font-size="10" fill="#64748b" letter-spacing="3px">MUSIC DISTRIBUTION</text>
+          </svg>
         </div>
       </div>
 
       <!-- Tagline -->
       <p class="tagline">Distribute Your Music Worldwide</p>
 
-      <!-- Platforms -->
+      <!-- Platforms with original logos -->
       <div class="platforms">
+        <!-- Spotify -->
         <div class="platform">
-          <div class="platform-icon">🎧</div>
+          <div class="platform-icon">
+            <svg viewBox="0 0 24 24" fill="#1DB954">
+              <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/>
+            </svg>
+          </div>
           <div class="platform-name">Spotify</div>
         </div>
+
+        <!-- Apple Music -->
         <div class="platform">
-          <div class="platform-icon">🍎</div>
+          <div class="platform-icon">
+            <svg viewBox="0 0 24 24" fill="#FA243C">
+              <path d="M23.994 6.124a9.23 9.23 0 00-.24-2.19c-.317-1.31-1.062-2.31-2.18-3.043a5.022 5.022 0 00-1.877-.726 10.496 10.496 0 00-1.564-.15c-.04-.003-.083-.01-.124-.013H5.986c-.152.01-.303.017-.455.026-.747.043-1.49.123-2.193.4-1.336.53-2.3 1.452-2.865 2.78-.192.448-.292.925-.363 1.408-.056.392-.088.785-.1 1.18 0 .032-.007.062-.01.093v12.223c.01.14.017.283.027.424.05.815.154 1.624.497 2.373.65 1.42 1.738 2.353 3.234 2.8.42.127.856.187 1.293.228.555.053 1.11.06 1.667.06h11.03c.525 0 1.048-.034 1.57-.1.823-.106 1.597-.35 2.296-.81.84-.553 1.472-1.287 1.88-2.208.186-.42.293-.87.37-1.324.113-.675.138-1.358.137-2.04-.002-3.8 0-7.595-.003-11.393zm-6.423 3.99v5.712c0 .417-.058.827-.244 1.206-.29.59-.76.962-1.388 1.14-.35.1-.706.157-1.07.173-.95.042-1.785-.384-2.18-1.23a2.378 2.378 0 01-.174-.63 2.05 2.05 0 01.142-1.14c.258-.6.73-1.008 1.343-1.238.397-.148.81-.238 1.23-.29.416-.052.835-.09 1.25-.15.182-.025.356-.074.505-.18.137-.096.2-.238.2-.405V8.4c0-.235-.082-.395-.31-.457-.147-.04-.3-.065-.45-.085L12.96 7.47c-.694-.1-1.388-.2-2.08-.302-.08-.012-.16-.02-.253-.02v7.63c0 .48-.063.952-.274 1.39-.318.66-.833 1.08-1.538 1.28-.335.096-.68.15-1.03.167-.954.046-1.8-.36-2.22-1.206-.152-.307-.23-.635-.25-.974-.03-.56.062-1.096.37-1.58.395-.625.96-1.015 1.665-1.197.4-.103.81-.177 1.22-.242.335-.054.67-.097 1-.16.215-.04.415-.108.563-.27.11-.12.153-.26.153-.418V5.15c0-.2.04-.392.132-.57.16-.31.432-.46.762-.41.18.03.36.064.54.097l4.62.8 2.23.39c.17.03.343.062.51.103.26.063.392.233.392.5v4.055z"/>
+            </svg>
+          </div>
           <div class="platform-name">Apple Music</div>
         </div>
+
+        <!-- YouTube Music -->
         <div class="platform">
-          <div class="platform-icon">▶️</div>
+          <div class="platform-icon">
+            <svg viewBox="0 0 24 24" fill="#FF0000">
+              <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+            </svg>
+          </div>
           <div class="platform-name">YouTube</div>
         </div>
+
+        <!-- Amazon Music -->
         <div class="platform">
-          <div class="platform-icon">🛒</div>
+          <div class="platform-icon">
+            <svg viewBox="0 0 24 24" fill="#FF9900">
+              <path d="M.045 18.02c.072-.116.187-.124.348-.022 3.636 2.11 7.594 3.166 11.87 3.166 2.852 0 5.668-.533 8.447-1.595l.315-.14c.138-.06.234-.1.293-.13.226-.088.39-.046.525.13.12.174.09.336-.12.48-.256.19-.6.41-1.006.654-1.244.743-2.64 1.316-4.185 1.726a17.617 17.617 0 01-10.951-.577 17.88 17.88 0 01-5.43-3.35c-.1-.074-.151-.15-.151-.22 0-.047.021-.09.045-.122zm6.22-6.483c0-1.16.26-2.117.78-2.867.52-.75 1.24-1.25 2.16-1.5.62-.17 1.35-.27 2.19-.27l1.12.02v-.98c0-.74-.08-1.24-.23-1.5-.29-.44-.75-.66-1.38-.66l-.36.02c-.32.04-.62.14-.87.3-.26.16-.44.39-.53.69-.04.13-.1.23-.18.3-.08.07-.19.12-.33.15l-1.97-.27c-.28-.07-.42-.19-.42-.38 0-.08.02-.15.06-.22.26-1.08.82-1.89 1.7-2.43.88-.54 1.95-.85 3.21-.93h.66c1.54 0 2.76.4 3.66 1.21.11.11.2.2.28.3.08.1.16.22.24.35.08.13.14.27.19.42.05.15.09.33.12.53.03.2.05.44.05.7v6.01c0 .32.08.58.23.79.15.21.35.42.6.64.1.08.15.18.15.31 0 .09-.04.18-.11.27l-1.38 1.17c-.16.11-.32.16-.49.16-.17 0-.33-.05-.48-.14-.42-.32-.75-.61-.97-.86-.22-.25-.4-.51-.55-.77-.66.72-1.32 1.22-1.99 1.51-.67.29-1.49.43-2.44.43-1.15 0-2.08-.33-2.79-1-.7-.66-1.05-1.58-1.05-2.74zm3.37-.26c0 .47.14.87.42 1.18.28.31.65.47 1.11.47.07 0 .15 0 .24-.02.09-.01.18-.03.28-.05.65-.17 1.17-.53 1.55-1.07.22-.34.39-.73.49-1.17.1-.44.15-.99.15-1.66v-.49c-.47 0-.87.02-1.2.06-.96.1-1.7.38-2.21.86-.51.48-.83 1.07-.83 1.89z"/>
+            </svg>
+          </div>
           <div class="platform-name">Amazon</div>
         </div>
+
+        <!-- Deezer -->
         <div class="platform">
-          <div class="platform-icon">🎵</div>
+          <div class="platform-icon">
+            <svg viewBox="0 0 24 24" fill="#FEAA2D">
+              <path d="M18.81 4.16v3.03H24V4.16h-5.19zM6.27 8.38v3.027h5.189V8.38h-5.19zm12.54 0v3.027H24V8.38h-5.19zM6.27 12.594v3.027h5.189v-3.027h-5.19zm6.271 0v3.027h5.19v-3.027h-5.19zm6.27 0v3.027H24v-3.027h-5.19zM0 16.81v3.029h5.19v-3.03H0zm6.27 0v3.029h5.189v-3.03h-5.19zm6.271 0v3.029h5.19v-3.03h-5.19zm6.27 0v3.029H24v-3.03h-5.19z"/>
+            </svg>
+          </div>
           <div class="platform-name">Deezer</div>
         </div>
       </div>
