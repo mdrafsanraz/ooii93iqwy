@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Logo from '@/components/Logo'
 import Link from 'next/link'
 
@@ -25,6 +25,7 @@ export default function EmailsPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [checkingAuth, setCheckingAuth] = useState(true)
   
   // Compose email state
   const [showCompose, setShowCompose] = useState(false)
@@ -38,6 +39,29 @@ export default function EmailsPage() {
   // Sent emails history
   const [sentEmails, setSentEmails] = useState<SentEmail[]>([])
 
+  // Check for saved session on mount
+  useEffect(() => {
+    const savedPassword = sessionStorage.getItem('adminPassword')
+    if (savedPassword) {
+      setPassword(savedPassword)
+      fetch('/api/admin/registrations', {
+        headers: { 'Authorization': `Basic ${btoa(`admin:${savedPassword}`)}` }
+      }).then(res => {
+        if (res.ok) {
+          setIsAuthenticated(true)
+        } else {
+          sessionStorage.removeItem('adminPassword')
+        }
+        setCheckingAuth(false)
+      }).catch(() => {
+        sessionStorage.removeItem('adminPassword')
+        setCheckingAuth(false)
+      })
+    } else {
+      setCheckingAuth(false)
+    }
+  }, [])
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
@@ -47,6 +71,7 @@ export default function EmailsPage() {
         headers: { 'Authorization': `Basic ${btoa(`admin:${password}`)}` }
       })
       if (res.ok) {
+        sessionStorage.setItem('adminPassword', password)
         setIsAuthenticated(true)
       } else {
         setError('Invalid password')
@@ -63,12 +88,13 @@ export default function EmailsPage() {
     setSending(true)
     setSendStatus(null)
 
+    const pwd = password || sessionStorage.getItem('adminPassword') || ''
     try {
       const res = await fetch('/api/admin/send-email', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Basic ${btoa(`admin:${password}`)}`
+          'Authorization': `Basic ${btoa(`admin:${pwd}`)}`
         },
         body: JSON.stringify({
           from: fromEmail,
@@ -103,6 +129,18 @@ export default function EmailsPage() {
     } finally {
       setSending(false)
     }
+  }
+
+  // Show loading while checking saved auth
+  if (checkingAuth) {
+    return (
+      <div className="min-h-screen bg-[var(--surface)] flex items-center justify-center p-4">
+        <div className="text-center">
+          <Logo className="w-10 h-10 mx-auto mb-2 animate-pulse" />
+          <p className="text-sm text-[var(--text-muted)]">Loading...</p>
+        </div>
+      </div>
+    )
   }
 
   if (!isAuthenticated) {
@@ -145,7 +183,7 @@ export default function EmailsPage() {
             <Link href="/admin" className="text-xs text-primary hover:underline">
               ← Dashboard
             </Link>
-            <button onClick={() => setIsAuthenticated(false)} className="text-xs text-[var(--text-muted)]">
+            <button onClick={() => { sessionStorage.removeItem('adminPassword'); setIsAuthenticated(false); }} className="text-xs text-[var(--text-muted)]">
               Logout
             </button>
           </div>

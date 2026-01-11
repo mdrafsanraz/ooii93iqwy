@@ -47,15 +47,42 @@ export default function AdminPage() {
   const [paymentFilter, setPaymentFilter] = useState<'all' | 'paid' | 'trial'>('all')
   const [typeFilter, setTypeFilter] = useState<'all' | 'artist' | 'label'>('all')
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'done'>('all')
+  const [checkingAuth, setCheckingAuth] = useState(true)
+
+  // Check for saved session on mount
+  useEffect(() => {
+    const savedPassword = sessionStorage.getItem('adminPassword')
+    if (savedPassword) {
+      setPassword(savedPassword)
+      // Verify the saved password is still valid
+      fetch('/api/admin/registrations', {
+        headers: { 'Authorization': `Basic ${btoa(`admin:${savedPassword}`)}` }
+      }).then(res => {
+        if (res.ok) {
+          setIsAuthenticated(true)
+        } else {
+          sessionStorage.removeItem('adminPassword')
+        }
+        setCheckingAuth(false)
+      }).catch(() => {
+        sessionStorage.removeItem('adminPassword')
+        setCheckingAuth(false)
+      })
+    } else {
+      setCheckingAuth(false)
+    }
+  }, [])
 
   const fetchData = useCallback(async () => {
+    const pwd = password || sessionStorage.getItem('adminPassword') || ''
     setLoading(true)
     try {
       const res = await fetch('/api/admin/registrations', {
-        headers: { 'Authorization': `Basic ${btoa(`admin:${password}`)}` }
+        headers: { 'Authorization': `Basic ${btoa(`admin:${pwd}`)}` }
       })
       if (res.status === 401) {
         setIsAuthenticated(false)
+        sessionStorage.removeItem('adminPassword')
         return
       }
       const data = await res.json()
@@ -77,6 +104,7 @@ export default function AdminPage() {
         headers: { 'Authorization': `Basic ${btoa(`admin:${password}`)}` }
       })
       if (res.ok) {
+        sessionStorage.setItem('adminPassword', password)
         setIsAuthenticated(true)
         const data = await res.json()
         setRegistrations(data.registrations)
@@ -168,6 +196,18 @@ export default function AdminPage() {
     }
   }, [isAuthenticated, fetchData])
 
+  // Show loading while checking saved auth
+  if (checkingAuth) {
+    return (
+      <div className="min-h-screen bg-[var(--surface)] flex items-center justify-center p-4">
+        <div className="text-center">
+          <Logo className="w-10 h-10 mx-auto mb-2 animate-pulse" />
+          <p className="text-sm text-[var(--text-muted)]">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-[var(--surface)] flex items-center justify-center p-4">
@@ -250,7 +290,7 @@ export default function AdminPage() {
             <Link href="/admin/emails" className="text-xs text-primary hover:underline">
               📧 Emails
             </Link>
-            <button onClick={() => setIsAuthenticated(false)} className="text-xs text-[var(--text-muted)]">
+            <button onClick={() => { sessionStorage.removeItem('adminPassword'); setIsAuthenticated(false); }} className="text-xs text-[var(--text-muted)]">
               Logout
             </button>
           </div>
