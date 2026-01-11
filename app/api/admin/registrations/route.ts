@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getRegistrations, getStats, updateRegistration } from '@/lib/registrations'
+import { getRegistrations, getStats, updateRegistration, deleteRegistration, getRegistrationById } from '@/lib/registrations'
+import Stripe from 'stripe'
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
+  apiVersion: '2024-04-10',
+})
 
 // Simple admin auth check
 function isAuthorized(request: NextRequest): boolean {
@@ -69,6 +74,100 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ success: true, registration: updated })
   } catch (error) {
     console.error('Admin PATCH error:', error)
+    return NextResponse.json({ error: 'Server error' }, { status: 500 })
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    if (!isAuthorized(request)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+    
+    const { id, cancelSubscription } = await request.json()
+    
+    if (!id) {
+      return NextResponse.json({ error: 'Registration ID required' }, { status: 400 })
+    }
+    
+    // Get registration to find subscription ID
+    const registration = await getRegistrationById(id)
+    
+    if (!registration) {
+      return NextResponse.json({ error: 'Registration not found' }, { status: 404 })
+    }
+    
+    // Cancel Stripe subscription if requested and exists
+    if (cancelSubscription && registration.subscriptionId) {
+      try {
+        await stripe.subscriptions.cancel(registration.subscriptionId)
+        console.log('Cancelled Stripe subscription:', registration.subscriptionId)
+      } catch (stripeError) {
+        console.error('Failed to cancel Stripe subscription:', stripeError)
+        // Continue with deletion even if Stripe cancellation fails
+      }
+    }
+    
+    // Delete registration from database
+    const deleted = await deleteRegistration(id)
+    
+    if (!deleted) {
+      return NextResponse.json({ error: 'Failed to delete registration' }, { status: 500 })
+    }
+    
+    return NextResponse.json({ 
+      success: true, 
+      message: 'Registration deleted',
+      subscriptionCancelled: cancelSubscription && registration.subscriptionId ? true : false
+    })
+  } catch (error) {
+    console.error('Admin DELETE error:', error)
+    return NextResponse.json({ error: 'Server error' }, { status: 500 })
+  }
+}
+
+// Cancel subscription only (without deleting registration)
+export async function PUT(request: NextRequest) {
+  try {
+    if (!isAuthorized(request)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+    
+    const { id, action } = await request.json()
+    
+    if (action === 'cancel_subscription') {
+      const registration = await getRegistrationById(id)
+      
+      if (!registration) {
+        return NextResponse.json({ error: 'Registration not found' }, { status: 404 })
+      }
+      
+      if (!registration.subscriptionId) {
+        return NextResponse.json({ error: 'No subscription found for this registration' }, { status: 400 })
+      }
+      
+      try {
+        await stripe.subscriptions.cancel(registration.subscriptionId)
+        
+        // Update registration status
+        await updateRegistration(id, { 
+          subscriptionStatus: 'cancelled',
+          paymentStatus: 'failed'
+        })
+        
+        return NextResponse.json({ 
+          success: true, 
+          message: 'Subscription cancelled successfully'
+        })
+      } catch (stripeError) {
+        console.error('Stripe cancellation error:', stripeError)
+        return NextResponse.json({ error: 'Failed to cancel subscription in Stripe' }, { status: 500 })
+      }
+    }
+    
+    return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
+  } catch (error) {
+    console.error('Admin PUT error:', error)
     return NextResponse.json({ error: 'Server error' }, { status: 500 })
   }
 }

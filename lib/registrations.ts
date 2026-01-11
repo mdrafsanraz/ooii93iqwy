@@ -121,6 +121,21 @@ export async function updateRegistration(id: string, updates: Partial<Registrati
   }
 }
 
+export async function deleteRegistration(id: string): Promise<boolean> {
+  try {
+    const db = await getDatabase()
+    const collection = db.collection<Registration>(COLLECTION)
+    
+    const result = await collection.deleteOne({ id })
+    
+    console.log('Registration deleted:', id, 'Count:', result.deletedCount)
+    return result.deletedCount > 0
+  } catch (error) {
+    console.error('Error deleting registration:', error)
+    throw error
+  }
+}
+
 export async function getStats() {
   try {
     const db = await getDatabase()

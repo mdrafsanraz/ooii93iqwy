@@ -142,6 +142,66 @@ export default function AdminPage() {
     }
   }
 
+  const deleteRegistration = async (id: string, cancelSubscription: boolean) => {
+    if (!confirm(cancelSubscription 
+      ? 'Are you sure you want to DELETE this registration AND CANCEL the Stripe subscription? This cannot be undone.'
+      : 'Are you sure you want to DELETE this registration? The Stripe subscription will remain active.'
+    )) {
+      return
+    }
+    
+    try {
+      const res = await fetch('/api/admin/registrations', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Basic ${btoa(`admin:${password}`)}`
+        },
+        body: JSON.stringify({ id, cancelSubscription })
+      })
+      
+      if (!res.ok) {
+        const data = await res.json()
+        setError(data.error || 'Delete failed')
+        return
+      }
+      
+      fetchData()
+      setSelectedRegistration(null)
+    } catch {
+      setError('Delete failed')
+    }
+  }
+
+  const cancelSubscription = async (id: string) => {
+    if (!confirm('Are you sure you want to CANCEL this user\'s Stripe subscription? They will lose access after the current period ends.')) {
+      return
+    }
+    
+    try {
+      const res = await fetch('/api/admin/registrations', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Basic ${btoa(`admin:${password}`)}`
+        },
+        body: JSON.stringify({ id, action: 'cancel_subscription' })
+      })
+      
+      if (!res.ok) {
+        const data = await res.json()
+        setError(data.error || 'Cancel failed')
+        return
+      }
+      
+      fetchData()
+      setSelectedRegistration(null)
+      alert('Subscription cancelled successfully')
+    } catch {
+      setError('Cancel failed')
+    }
+  }
+
   // Apply all filters
   const getFilteredRegistrations = () => {
     return registrations.filter(reg => {
@@ -660,15 +720,49 @@ export default function AdminPage() {
               </div>
             </div>
 
-            <div className="mt-4 pt-3 border-t border-[var(--border)] flex gap-2">
-              {!selectedRegistration.accountCreated && (
-                <button onClick={() => markAccountCreated(selectedRegistration.id)} className="btn-primary flex-1 text-sm py-2">
-                  Mark Created
+            <div className="mt-4 pt-3 border-t border-[var(--border)] space-y-2">
+              {/* Primary Actions */}
+              <div className="flex gap-2">
+                {!selectedRegistration.accountCreated && (
+                  <button onClick={() => markAccountCreated(selectedRegistration.id)} className="btn-primary flex-1 text-sm py-2">
+                    ✓ Mark Created
+                  </button>
+                )}
+                <button onClick={() => setSelectedRegistration(null)} className="btn-secondary flex-1 text-sm py-2">
+                  Close
+                </button>
+              </div>
+              
+              {/* Subscription Actions */}
+              {selectedRegistration.subscriptionId && selectedRegistration.subscriptionStatus !== 'cancelled' && (
+                <button 
+                  onClick={() => cancelSubscription(selectedRegistration.id)} 
+                  className="w-full text-xs py-2 px-3 rounded-lg bg-warning/10 text-warning border border-warning/20 hover:bg-warning/20 transition-colors"
+                >
+                  ⚠️ Cancel Subscription
                 </button>
               )}
-              <button onClick={() => setSelectedRegistration(null)} className="btn-secondary flex-1 text-sm py-2">
-                Close
-              </button>
+              
+              {/* Delete Actions */}
+              <div className="pt-2 border-t border-[var(--border)]">
+                <p className="text-[10px] text-[var(--text-muted)] mb-2">Danger Zone</p>
+                <div className="flex gap-2">
+                  <button 
+                    onClick={() => deleteRegistration(selectedRegistration.id, false)} 
+                    className="flex-1 text-xs py-2 px-3 rounded-lg bg-error/10 text-error border border-error/20 hover:bg-error/20 transition-colors"
+                  >
+                    🗑️ Delete Only
+                  </button>
+                  {selectedRegistration.subscriptionId && (
+                    <button 
+                      onClick={() => deleteRegistration(selectedRegistration.id, true)} 
+                      className="flex-1 text-xs py-2 px-3 rounded-lg bg-error text-white hover:bg-error/90 transition-colors"
+                    >
+                      🗑️ Delete + Cancel Sub
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </div>
