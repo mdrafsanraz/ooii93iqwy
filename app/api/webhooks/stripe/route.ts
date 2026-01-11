@@ -114,6 +114,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
 
   const db = await getDatabase()
   const email = subscription.metadata?.email
+  const name = subscription.metadata?.name || 'Customer'
 
   if (email) {
     await db.collection('registrations').updateOne(
@@ -121,9 +122,112 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
       { $set: { subscriptionStatus: 'cancelled' } }
     )
 
+    // Send cancellation email to customer
+    try {
+      await resend.emails.send({
+        from: 'RDistro <registration@rdistro.net>',
+        to: email,
+        subject: 'Your RDistro Subscription Has Been Cancelled',
+        html: `
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          </head>
+          <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; background-color: #f3f4f6;">
+            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: #f3f4f6; padding: 40px 20px;">
+              <tr>
+                <td align="center">
+                  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width: 560px; background-color: #ffffff; border-radius: 16px; overflow: hidden;">
+                    
+                    <!-- Header -->
+                    <tr>
+                      <td style="background-color: #1f2937; padding: 32px 40px; text-align: center;">
+                        <img src="https://app.rdistro.net/logo.jpg" alt="RDistro" width="80" height="80" style="display: block; margin: 0 auto 16px; border-radius: 8px;" />
+                        <h1 style="margin: 0; font-size: 24px; font-weight: 700; color: #ffffff;">RDistro</h1>
+                      </td>
+                    </tr>
+                    
+                    <!-- Content -->
+                    <tr>
+                      <td style="padding: 32px 40px;">
+                        <h2 style="margin: 0 0 16px; font-size: 22px; font-weight: 700; color: #1f2937; text-align: center;">
+                          Subscription Cancelled
+                        </h2>
+                        
+                        <p style="margin: 0 0 16px; font-size: 15px; color: #374151; line-height: 1.7;">
+                          Hi ${name},
+                        </p>
+                        
+                        <p style="margin: 0 0 24px; font-size: 15px; color: #374151; line-height: 1.7;">
+                          Your RDistro subscription has been cancelled. We're sorry to see you go.
+                        </p>
+                        
+                        <!-- Info Box -->
+                        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 24px;">
+                          <tr>
+                            <td style="background-color: #fef3c7; border: 1px solid #fcd34d; border-radius: 12px; padding: 20px;">
+                              <p style="margin: 0 0 8px; font-size: 14px; font-weight: 700; color: #92400e;">What This Means</p>
+                              <p style="margin: 0; font-size: 14px; color: #78350f; line-height: 1.6;">
+                                Your releases will remain on streaming platforms until the end of your current billing period. After that, they may be taken down.
+                              </p>
+                            </td>
+                          </tr>
+                        </table>
+                        
+                        <!-- Reactivate Box -->
+                        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 24px;">
+                          <tr>
+                            <td style="background-color: #eff6ff; border: 1px solid #bfdbfe; border-radius: 12px; padding: 20px;">
+                              <p style="margin: 0 0 8px; font-size: 14px; font-weight: 700; color: #1e40af;">Want to Come Back?</p>
+                              <p style="margin: 0; font-size: 14px; color: #1e3a8a; line-height: 1.6;">
+                                You can reactivate your subscription at any time by visiting <a href="https://app.rdistro.net" style="color: #7c3aed; text-decoration: none; font-weight: 600;">app.rdistro.net</a> or contacting our support team.
+                              </p>
+                            </td>
+                          </tr>
+                        </table>
+                        
+                        <p style="margin: 0; font-size: 15px; color: #374151; line-height: 1.7;">
+                          Thank you for being part of RDistro. We hope to see you again!
+                        </p>
+                      </td>
+                    </tr>
+                    
+                    <!-- Footer -->
+                    <tr>
+                      <td style="padding: 24px 40px; border-top: 1px solid #e5e7eb;">
+                        <p style="margin: 0; font-size: 15px; color: #1f2937; font-weight: 600;">
+                          The RDistro Team
+                        </p>
+                      </td>
+                    </tr>
+                    
+                    <!-- Bottom Footer -->
+                    <tr>
+                      <td style="background-color: #f9fafb; padding: 24px 40px; text-align: center; border-top: 1px solid #e5e7eb;">
+                        <p style="margin: 0; font-size: 13px; color: #6b7280;">
+                          Questions? Contact us at <a href="mailto:support@rdistro.net" style="color: #7c3aed; text-decoration: none;">support@rdistro.net</a>
+                        </p>
+                      </td>
+                    </tr>
+                    
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </body>
+          </html>
+        `,
+      })
+      console.log('Cancellation email sent to:', email)
+    } catch (emailError) {
+      console.error('Failed to send cancellation email:', emailError)
+    }
+
     // Notify admin
     await sendAdminNotification(
-      '❌ Subscription Cancelled',
+      'Subscription Cancelled',
       `Subscription cancelled for: ${email}`
     )
   }
