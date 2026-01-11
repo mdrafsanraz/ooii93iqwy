@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import Link from 'next/link'
 import Logo from '@/components/Logo'
 
 interface Registration {
@@ -245,9 +246,14 @@ export default function AdminPage() {
             <span className="font-bold text-[var(--text)]">RDistro</span>
             <span className="badge text-[10px]">Admin</span>
           </div>
-          <button onClick={() => setIsAuthenticated(false)} className="text-xs text-[var(--text-muted)]">
-            Logout
-          </button>
+          <div className="flex items-center gap-3">
+            <Link href="/admin/emails" className="text-xs text-primary hover:underline">
+              📧 Emails
+            </Link>
+            <button onClick={() => setIsAuthenticated(false)} className="text-xs text-[var(--text-muted)]">
+              Logout
+            </button>
+          </div>
         </div>
       </header>
 
@@ -268,53 +274,17 @@ export default function AdminPage() {
           ))}
         </div>
 
-        {/* Email Accounts Section */}
-        <div className="card mb-4 overflow-hidden">
-          <div className="p-3 border-b border-[var(--border)] bg-[var(--surface)]">
-            <h3 className="font-semibold text-sm text-[var(--text)] flex items-center gap-2">
-              📧 Email Accounts
-            </h3>
-          </div>
-          <div className="p-3">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-              {[
-                { email: 'fatama@rdistro.net', label: 'Fatama', icon: '👤' },
-                { email: 'rafsan@rdistro.net', label: 'Rafsan', icon: '👤' },
-                { email: 'support@rdistro.net', label: 'Support', icon: '🎧' },
-                { email: 'registration@rdistro.net', label: 'Registration', icon: '📝' },
-              ].map((account) => (
-                <div key={account.email} className="p-2 rounded-lg bg-[var(--surface)] border border-[var(--border)] hover:border-primary/50 transition-colors">
-                  <div className="text-lg mb-1">{account.icon}</div>
-                  <p className="text-xs font-medium text-[var(--text)]">{account.label}</p>
-                  <p className="text-[10px] text-[var(--text-muted)] truncate">{account.email}</p>
-                </div>
-              ))}
-            </div>
-            <div className="mt-3 p-2 rounded-lg bg-primary/5 border border-primary/20">
-              <p className="text-[10px] text-[var(--text-muted)] mb-2">
-                <strong>📌 Access your emails:</strong> Use Google Workspace, Zoho Mail, or your email provider&apos;s webmail.
-              </p>
-              <div className="flex flex-wrap gap-2">
-                <a 
-                  href="https://mail.google.com" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-[10px] px-2 py-1 bg-white rounded border border-[var(--border)] hover:border-primary text-[var(--text)] transition-colors"
-                >
-                  Open Gmail →
-                </a>
-                <a 
-                  href="https://mail.zoho.com" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-[10px] px-2 py-1 bg-white rounded border border-[var(--border)] hover:border-primary text-[var(--text)] transition-colors"
-                >
-                  Open Zoho Mail →
-                </a>
-              </div>
+        {/* Quick Email Access */}
+        <Link href="/admin/emails" className="card mb-4 p-3 flex items-center justify-between hover:border-primary/50 transition-colors block">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">📧</span>
+            <div>
+              <p className="text-sm font-medium text-[var(--text)]">Email Management</p>
+              <p className="text-[10px] text-[var(--text-muted)]">Send emails to customers via Resend</p>
             </div>
           </div>
-        </div>
+          <span className="text-primary text-sm">Open →</span>
+        </Link>
 
         {/* Filters */}
         <div className="mb-4 space-y-2">
