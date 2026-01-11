@@ -109,12 +109,13 @@ export async function GET() {
       </html>
     `
 
-    results.push(await resend.emails.send({
-      from: 'RDistro <registration@rdistro.net>',
-      to: testEmail,
-      subject: '[1/6] Registration Successful - Welcome to RDistro',
-      html: registrationEmail,
-    }))
+    // Skipping email 1 - already tested
+    // results.push(await resend.emails.send({
+    //   from: 'RDistro <registration@rdistro.net>',
+    //   to: testEmail,
+    //   subject: '[1/6] Registration Successful - Welcome to RDistro',
+    //   html: registrationEmail,
+    // }))
 
     // ============================================
     // 2. FREE TRIAL STARTED
@@ -218,12 +219,13 @@ export async function GET() {
       </html>
     `
 
-    results.push(await resend.emails.send({
-      from: 'RDistro <registration@rdistro.net>',
-      to: testEmail,
-      subject: '[2/6] Your Free Trial Has Started - RDistro',
-      html: trialEmail,
-    }))
+    // Skipping email 2 - already tested
+    // results.push(await resend.emails.send({
+    //   from: 'RDistro <registration@rdistro.net>',
+    //   to: testEmail,
+    //   subject: '[2/6] Your Free Trial Has Started - RDistro',
+    //   html: trialEmail,
+    // }))
 
     // ============================================
     // 3. TRIAL ENDING SOON (3 days before)
