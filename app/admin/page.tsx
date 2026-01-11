@@ -76,6 +76,7 @@ export default function AdminPage() {
   const fetchData = useCallback(async () => {
     const pwd = password || sessionStorage.getItem('adminPassword') || ''
     setLoading(true)
+    setError('')
     try {
       const res = await fetch('/api/admin/registrations', {
         headers: { 'Authorization': `Basic ${btoa(`admin:${pwd}`)}` }
@@ -85,9 +86,14 @@ export default function AdminPage() {
         sessionStorage.removeItem('adminPassword')
         return
       }
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}))
+        setError(`Server error: ${res.status} - ${errorData.error || 'Unknown error'}`)
+        return
+      }
       const data = await res.json()
-      setRegistrations(data.registrations)
-      setStats(data.stats)
+      setRegistrations(data.registrations || [])
+      setStats(data.stats || { total: 0, pending: 0, completed: 0, revenue: 0, trials: 0 })
     } catch {
       setError('Failed to fetch')
     } finally {
@@ -298,6 +304,13 @@ export default function AdminPage() {
       </header>
 
       <div className="max-w-5xl mx-auto px-4 py-4">
+        {/* Error Display */}
+        {error && (
+          <div className="mb-4 p-3 bg-error/10 border border-error/20 rounded-lg text-error text-sm">
+            ⚠️ {error}
+          </div>
+        )}
+
         {/* Stats */}
         <div className="grid grid-cols-5 gap-2 mb-4">
           {[
