@@ -270,12 +270,13 @@ export async function GET() {
       </html>
     `
 
-    results.push(await resend.emails.send({
-      from: 'RDistro <registration@rdistro.net>',
-      to: testEmail,
-      subject: '[3/6] Your Free Trial Ends Soon - RDistro',
-      html: trialEndingEmail,
-    }))
+    // Skipping email 3 - already tested
+    // results.push(await resend.emails.send({
+    //   from: 'RDistro <registration@rdistro.net>',
+    //   to: testEmail,
+    //   subject: '[3/6] Your Free Trial Ends Soon - RDistro',
+    //   html: trialEndingEmail,
+    // }))
 
     // ============================================
     // 4. PAYMENT SUCCESSFUL (Renewal)
@@ -315,12 +316,13 @@ export async function GET() {
       </html>
     `
 
-    results.push(await resend.emails.send({
-      from: 'RDistro <registration@rdistro.net>',
-      to: testEmail,
-      subject: '[4/6] Payment Successful - RDistro Subscription',
-      html: paymentSuccessEmail,
-    }))
+    // Skipping email 4 - already tested
+    // results.push(await resend.emails.send({
+    //   from: 'RDistro <registration@rdistro.net>',
+    //   to: testEmail,
+    //   subject: '[4/6] Payment Successful - RDistro Subscription',
+    //   html: paymentSuccessEmail,
+    // }))
 
     // ============================================
     // 5. PAYMENT FAILED
