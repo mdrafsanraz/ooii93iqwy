@@ -72,7 +72,7 @@ ${message}
           </div>
         </div>
       `,
-      replyTo: from,
+      reply_to: from,
     })
 
     if (error) {
