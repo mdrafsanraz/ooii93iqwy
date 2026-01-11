@@ -35,8 +35,12 @@ export async function addRegistration(data: Omit<Registration, 'id' | 'createdAt
     const db = await getDatabase()
     const collection = db.collection<Registration>(COLLECTION)
     
+    // Normalize email to lowercase for consistent duplicate detection
+    const normalizedEmail = data.email.toLowerCase()
+    
     const registration: Registration = {
       ...data,
+      email: normalizedEmail,
       id: `reg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       createdAt: new Date().toISOString(),
       accountCreated: false,
@@ -79,6 +83,23 @@ export async function getRegistrationById(id: string): Promise<Registration | nu
     console.error('Error getting registration by id:', error)
     throw error
   }
+}
+
+export async function getRegistrationByEmail(email: string): Promise<Registration | null> {
+  try {
+    const db = await getDatabase()
+    const collection = db.collection<Registration>(COLLECTION)
+    
+    return await collection.findOne({ email: email.toLowerCase() })
+  } catch (error) {
+    console.error('Error getting registration by email:', error)
+    throw error
+  }
+}
+
+export async function emailExists(email: string): Promise<boolean> {
+  const registration = await getRegistrationByEmail(email)
+  return registration !== null
 }
 
 export async function updateRegistration(id: string, updates: Partial<Registration>): Promise<Registration | null> {

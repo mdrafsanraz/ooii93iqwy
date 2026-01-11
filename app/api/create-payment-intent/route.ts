@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
+import { emailExists } from '@/lib/registrations'
 
 export async function POST(request: NextRequest) {
   try {
@@ -25,6 +26,21 @@ export async function POST(request: NextRequest) {
         { error: 'Invalid plan selected' },
         { status: 400 }
       )
+    }
+
+    // Check for duplicate registration
+    try {
+      const exists = await emailExists(email)
+      if (exists) {
+        console.log('Duplicate registration attempt:', email)
+        return NextResponse.json(
+          { error: 'This email is already registered. Please use a different email or contact support.' },
+          { status: 409 }
+        )
+      }
+    } catch (dbError) {
+      console.error('Database check error:', dbError)
+      // Continue with registration if DB check fails (to not block users)
     }
 
     // Get or create price IDs for subscriptions
