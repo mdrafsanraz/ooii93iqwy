@@ -113,7 +113,7 @@
     .logo {
       display: flex;
       align-items: center;
-      gap: 24px;
+      justify-content: center;
       margin-bottom: 30px;
       animation: fadeInScale 1s ease-out;
     }
@@ -129,54 +129,29 @@
       }
     }
 
-    .logo-icon {
-      width: 90px;
-      height: 90px;
-      background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%);
-      border-radius: 20px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 20px 40px rgba(124, 58, 237, 0.25);
+    .logo svg {
+      width: 320px;
+      height: 107px;
     }
 
-    .wave-bars {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      height: 40px;
-    }
-
-    .wave-bar {
-      width: 8px;
-      background: white;
-      border-radius: 4px;
-      animation: waveBar 1s ease-in-out infinite;
-    }
-
-    .wave-bar:nth-child(1) { height: 15px; animation-delay: 0s; }
-    .wave-bar:nth-child(2) { height: 30px; animation-delay: 0.15s; }
-    .wave-bar:nth-child(3) { height: 40px; animation-delay: 0.3s; }
-    .wave-bar:nth-child(4) { height: 25px; animation-delay: 0.45s; }
-
-    @keyframes waveBar {
-      0%, 100% { transform: scaleY(1); }
-      50% { transform: scaleY(0.5); }
-    }
-
-    .logo-text {
-      font-size: 64px;
-      font-weight: 800;
-      color: #0f172a;
+    /* Tagline above headline */
+    .tagline {
+      font-size: 22px;
+      font-weight: 600;
+      color: #7c3aed;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      margin-bottom: 15px;
+      animation: slideUp 0.8s ease-out 0.2s both;
     }
 
     /* Main headline */
     .headline {
-      font-size: 56px;
+      font-size: 52px;
       font-weight: 800;
       color: #0f172a;
-      line-height: 1.1;
-      margin-bottom: 20px;
+      line-height: 1.15;
+      margin-bottom: 16px;
       animation: slideUp 0.8s ease-out 0.3s both;
     }
 
@@ -199,10 +174,25 @@
     }
 
     .subheadline {
-      font-size: 24px;
+      font-size: 26px;
       color: #64748b;
-      margin-bottom: 50px;
+      margin-bottom: 40px;
       animation: slideUp 0.8s ease-out 0.5s both;
+      line-height: 1.4;
+    }
+
+    .subheadline strong {
+      color: #0f172a;
+      font-weight: 700;
+    }
+
+    .highlight-text {
+      display: inline-block;
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-weight: 700;
     }
 
     /* Platform icons */
@@ -381,22 +371,64 @@
     <div class="content">
       <!-- Logo -->
       <div class="logo">
-        <div class="logo-icon">
-          <div class="wave-bars">
-            <div class="wave-bar"></div>
-            <div class="wave-bar"></div>
-            <div class="wave-bar"></div>
-            <div class="wave-bar"></div>
-          </div>
-        </div>
-        <span class="logo-text">RDistro</span>
+        <svg viewBox="0 0 300 100" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="waveGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" style="stop-color:#7c3aed;stop-opacity:1" />
+              <stop offset="50%" style="stop-color:#5b21b6;stop-opacity:1" />
+              <stop offset="100%" style="stop-color:#7c3aed;stop-opacity:1" />
+            </linearGradient>
+          </defs>
+          
+          <!-- Sound wave visualization -->
+          <g transform="translate(20, 30)">
+            <rect x="0" y="20" width="4" height="20" fill="url(#waveGradient)" rx="2">
+              <animate attributeName="height" values="20;35;20" dur="1.5s" repeatCount="indefinite"/>
+              <animate attributeName="y" values="20;12.5;20" dur="1.5s" repeatCount="indefinite"/>
+            </rect>
+            <rect x="10" y="15" width="4" height="30" fill="url(#waveGradient)" rx="2">
+              <animate attributeName="height" values="30;40;30" dur="1.8s" repeatCount="indefinite"/>
+              <animate attributeName="y" values="15;10;15" dur="1.8s" repeatCount="indefinite"/>
+            </rect>
+            <rect x="20" y="10" width="4" height="40" fill="url(#waveGradient)" rx="2">
+              <animate attributeName="height" values="40;50;40" dur="1.2s" repeatCount="indefinite"/>
+              <animate attributeName="y" values="10;5;10" dur="1.2s" repeatCount="indefinite"/>
+            </rect>
+            <rect x="30" y="18" width="4" height="24" fill="url(#waveGradient)" rx="2">
+              <animate attributeName="height" values="24;38;24" dur="2s" repeatCount="indefinite"/>
+              <animate attributeName="y" values="18;11;18" dur="2s" repeatCount="indefinite"/>
+            </rect>
+            <rect x="40" y="12" width="4" height="36" fill="url(#waveGradient)" rx="2">
+              <animate attributeName="height" values="36;45;36" dur="1.6s" repeatCount="indefinite"/>
+              <animate attributeName="y" values="12;7.5;12" dur="1.6s" repeatCount="indefinite"/>
+            </rect>
+          </g>
+          
+          <!-- Company name -->
+          <text x="75" y="52" font-family="Inter, Arial, sans-serif" font-weight="800" font-size="28" fill="#0f172a">RDISTRO</text>
+          <text x="75" y="70" font-family="Inter, Arial, sans-serif" font-weight="400" font-size="10" fill="#64748b" letter-spacing="3px">MUSIC DISTRIBUTION</text>
+          
+          <!-- Decorative dots -->
+          <circle cx="62" cy="35" r="2.5" fill="#7c3aed" opacity="0.6">
+            <animate attributeName="opacity" values="0.6;1;0.6" dur="3s" repeatCount="indefinite"/>
+          </circle>
+          <circle cx="67" cy="50" r="2" fill="#ec4899" opacity="0.4">
+            <animate attributeName="opacity" values="0.4;0.8;0.4" dur="2.8s" repeatCount="indefinite"/>
+          </circle>
+        </svg>
       </div>
+
+      <!-- Tagline -->
+      <p class="tagline">Turn Your Passion Into Profit</p>
 
       <!-- Headlines -->
       <h1 class="headline">
-        Get Your Music on<br><span>Every Platform</span>
+        Your <span>Hobby Music</span> or<br><span>Cover Songs</span> Can Earn
       </h1>
-      <p class="subheadline">One upload. Global distribution. Keep 100% royalties.</p>
+      <p class="subheadline">
+        Distribute to <strong>450+ platforms</strong> worldwide.<br>
+        Keep <span class="highlight-text">100% royalties</span>. Start <span class="highlight-text">earning today</span>.
+      </p>
 
       <!-- Platforms with original logos -->
       <div class="platforms">
