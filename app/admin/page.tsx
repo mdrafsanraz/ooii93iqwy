@@ -48,6 +48,8 @@ export default function AdminPage() {
   const [typeFilter, setTypeFilter] = useState<'all' | 'artist' | 'label'>('all')
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'done'>('all')
   const [checkingAuth, setCheckingAuth] = useState(true)
+  const [trialEnabled, setTrialEnabled] = useState(true)
+  const [savingSettings, setSavingSettings] = useState(false)
 
   // Check for saved session on mount
   useEffect(() => {
@@ -202,6 +204,46 @@ export default function AdminPage() {
     }
   }
 
+  // Fetch settings
+  const fetchSettings = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/settings')
+      if (res.ok) {
+        const data = await res.json()
+        setTrialEnabled(data.trialEnabled ?? true)
+      }
+    } catch {
+      console.error('Failed to fetch settings')
+    }
+  }, [])
+
+  // Toggle trial setting
+  const toggleTrial = async () => {
+    const pwd = password || sessionStorage.getItem('adminPassword') || ''
+    setSavingSettings(true)
+    try {
+      const newValue = !trialEnabled
+      const res = await fetch('/api/admin/settings', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Basic ${btoa(`admin:${pwd}`)}`
+        },
+        body: JSON.stringify({ trialEnabled: newValue })
+      })
+      
+      if (res.ok) {
+        setTrialEnabled(newValue)
+      } else {
+        setError('Failed to update settings')
+      }
+    } catch {
+      setError('Failed to update settings')
+    } finally {
+      setSavingSettings(false)
+    }
+  }
+
   // Apply all filters
   const getFilteredRegistrations = () => {
     return registrations.filter(reg => {
@@ -257,13 +299,14 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      // Fetch data immediately when authenticated
+      // Fetch data and settings immediately when authenticated
       fetchData()
+      fetchSettings()
       // Then refresh every 30 seconds
       const interval = setInterval(fetchData, 30000)
       return () => clearInterval(interval)
     }
-  }, [isAuthenticated, fetchData])
+  }, [isAuthenticated, fetchData, fetchSettings])
 
   // Show loading while checking saved auth
   if (checkingAuth) {
@@ -390,17 +433,46 @@ export default function AdminPage() {
           ))}
         </div>
 
-        {/* Quick Email Access */}
-        <Link href="/admin/emails" className="card mb-4 p-3 flex items-center justify-between hover:border-primary/50 transition-colors block">
-          <div className="flex items-center gap-3">
-            <span className="text-2xl">📧</span>
-            <div>
-              <p className="text-sm font-medium text-[var(--text)]">Email Management</p>
-              <p className="text-[10px] text-[var(--text-muted)]">Send emails to customers via Resend</p>
+        {/* Settings & Quick Actions */}
+        <div className="grid grid-cols-2 gap-4 mb-4">
+          {/* Trial Toggle */}
+          <div className="card p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-[var(--text)]">Free Trial</p>
+                <p className="text-[10px] text-[var(--text-muted)]">Allow new Label registrations with 30-day trial</p>
+              </div>
+              <button
+                onClick={toggleTrial}
+                disabled={savingSettings}
+                className={`relative w-14 h-7 rounded-full transition-colors ${
+                  trialEnabled ? 'bg-success' : 'bg-gray-300'
+                } ${savingSettings ? 'opacity-50' : ''}`}
+              >
+                <span
+                  className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow transition-transform ${
+                    trialEnabled ? 'left-8' : 'left-1'
+                  }`}
+                />
+              </button>
             </div>
+            <p className={`text-xs mt-2 ${trialEnabled ? 'text-success' : 'text-[var(--text-muted)]'}`}>
+              {trialEnabled ? '✓ Trial is enabled for new users' : '✕ Trial is disabled'}
+            </p>
           </div>
-          <span className="text-primary text-sm">Open →</span>
-        </Link>
+
+          {/* Quick Email Access */}
+          <Link href="/admin/emails" className="card p-4 flex items-center justify-between hover:border-primary/50 transition-colors">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">📧</span>
+              <div>
+                <p className="text-sm font-medium text-[var(--text)]">Email Management</p>
+                <p className="text-[10px] text-[var(--text-muted)]">Send emails to customers via Resend</p>
+              </div>
+            </div>
+            <span className="text-primary text-sm">Open →</span>
+          </Link>
+        </div>
 
         {/* Filters */}
         <div className="mb-4 space-y-2">

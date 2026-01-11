@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { loadStripe } from '@stripe/stripe-js'
 import { Elements } from '@stripe/react-stripe-js'
@@ -79,6 +79,20 @@ export default function RegisterPage() {
   const [paymentType, setPaymentType] = useState<'payment' | 'setup'>('payment')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [trialEnabled, setTrialEnabled] = useState(true)
+
+  // Fetch trial setting on mount
+  useEffect(() => {
+    fetch('/api/admin/settings')
+      .then(res => res.json())
+      .then(data => {
+        setTrialEnabled(data.trialEnabled ?? true)
+      })
+      .catch(() => {
+        // Default to enabled on error
+        setTrialEnabled(true)
+      })
+  }, [])
 
   const handleFreeTrialToggle = (enabled: boolean) => {
     setFreeTrial(enabled)
@@ -223,26 +237,28 @@ export default function RegisterPage() {
                 >
                   <h2 className="text-lg font-bold text-[var(--text)] text-center mb-4">Choose Plan</h2>
 
-                  {/* Free Trial Toggle */}
-                  <div className="mb-4 p-3 rounded-xl bg-gradient-to-r from-primary/10 to-secondary/10 border border-primary/20">
-                    <label className="flex items-center justify-between cursor-pointer">
-                      <div>
-                        <p className="font-medium text-sm text-[var(--text)]">🎁 1 Month Free Trial</p>
-                        <p className="text-[10px] text-[var(--text-muted)]">Label plan only • Auto-charges after 30 days</p>
-                      </div>
-                      <div className="relative">
-                        <input
-                          type="checkbox"
-                          checked={freeTrial}
-                          onChange={(e) => handleFreeTrialToggle(e.target.checked)}
-                          className="sr-only"
-                        />
-                        <div className={`w-11 h-6 rounded-full transition-colors ${freeTrial ? 'bg-primary' : 'bg-gray-300'}`}>
-                          <div className={`w-5 h-5 bg-white rounded-full shadow transform transition-transform mt-0.5 ${freeTrial ? 'translate-x-5 ml-0.5' : 'translate-x-0.5'}`} />
+                  {/* Free Trial Toggle - Only show if trial is enabled */}
+                  {trialEnabled && (
+                    <div className="mb-4 p-3 rounded-xl bg-gradient-to-r from-primary/10 to-secondary/10 border border-primary/20">
+                      <label className="flex items-center justify-between cursor-pointer">
+                        <div>
+                          <p className="font-medium text-sm text-[var(--text)]">🎁 1 Month Free Trial</p>
+                          <p className="text-[10px] text-[var(--text-muted)]">Label plan only • Auto-charges after 30 days</p>
                         </div>
-                      </div>
-                    </label>
-                  </div>
+                        <div className="relative">
+                          <input
+                            type="checkbox"
+                            checked={freeTrial}
+                            onChange={(e) => handleFreeTrialToggle(e.target.checked)}
+                            className="sr-only"
+                          />
+                          <div className={`w-11 h-6 rounded-full transition-colors ${freeTrial ? 'bg-primary' : 'bg-gray-300'}`}>
+                            <div className={`w-5 h-5 bg-white rounded-full shadow transform transition-transform mt-0.5 ${freeTrial ? 'translate-x-5 ml-0.5' : 'translate-x-0.5'}`} />
+                          </div>
+                        </div>
+                      </label>
+                    </div>
+                  )}
 
                   <div className="grid grid-cols-2 gap-3">
                     {(Object.keys(plans) as Plan[]).map((planKey) => {
