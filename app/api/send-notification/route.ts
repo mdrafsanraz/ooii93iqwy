@@ -311,7 +311,7 @@ export async function POST(request: NextRequest) {
                 <span class="platform">Apple Music</span>
                 <span class="platform">YouTube Music</span>
                 <span class="platform">Amazon</span>
-                <span class="platform">+150 more</span>
+                <span class="platform">+450 more</span>
               </div>
             </div>
             
