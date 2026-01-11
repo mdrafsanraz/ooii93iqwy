@@ -268,6 +268,54 @@ export default function AdminPage() {
           ))}
         </div>
 
+        {/* Email Accounts Section */}
+        <div className="card mb-4 overflow-hidden">
+          <div className="p-3 border-b border-[var(--border)] bg-[var(--surface)]">
+            <h3 className="font-semibold text-sm text-[var(--text)] flex items-center gap-2">
+              📧 Email Accounts
+            </h3>
+          </div>
+          <div className="p-3">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+              {[
+                { email: 'fatama@rdistro.net', label: 'Fatama', icon: '👤' },
+                { email: 'rafsan@rdistro.net', label: 'Rafsan', icon: '👤' },
+                { email: 'support@rdistro.net', label: 'Support', icon: '🎧' },
+                { email: 'registration@rdistro.net', label: 'Registration', icon: '📝' },
+              ].map((account) => (
+                <div key={account.email} className="p-2 rounded-lg bg-[var(--surface)] border border-[var(--border)] hover:border-primary/50 transition-colors">
+                  <div className="text-lg mb-1">{account.icon}</div>
+                  <p className="text-xs font-medium text-[var(--text)]">{account.label}</p>
+                  <p className="text-[10px] text-[var(--text-muted)] truncate">{account.email}</p>
+                </div>
+              ))}
+            </div>
+            <div className="mt-3 p-2 rounded-lg bg-primary/5 border border-primary/20">
+              <p className="text-[10px] text-[var(--text-muted)] mb-2">
+                <strong>📌 Access your emails:</strong> Use Google Workspace, Zoho Mail, or your email provider&apos;s webmail.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <a 
+                  href="https://mail.google.com" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-[10px] px-2 py-1 bg-white rounded border border-[var(--border)] hover:border-primary text-[var(--text)] transition-colors"
+                >
+                  Open Gmail →
+                </a>
+                <a 
+                  href="https://mail.zoho.com" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-[10px] px-2 py-1 bg-white rounded border border-[var(--border)] hover:border-primary text-[var(--text)] transition-colors"
+                >
+                  Open Zoho Mail →
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Filters */}
         <div className="mb-4 space-y-2">
           <div className="flex flex-wrap items-center gap-4">
