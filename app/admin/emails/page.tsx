@@ -183,9 +183,6 @@ export default function EmailsPage() {
             <Link href="/admin" className="text-xs text-primary hover:underline">
               ← Dashboard
             </Link>
-            <Link href="/admin/templates" className="text-xs text-primary hover:underline">
-              📋 Templates
-            </Link>
             <button onClick={() => { sessionStorage.removeItem('adminPassword'); setIsAuthenticated(false); }} className="text-xs text-[var(--text-muted)]">
               Logout
             </button>
