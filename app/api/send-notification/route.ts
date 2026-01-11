@@ -216,21 +216,34 @@ export async function POST(request: NextRequest) {
           .footer-logo { font-size: 18px; font-weight: 700; color: #7c3aed; margin-bottom: 8px; }
           .footer-text { color: #94a3b8; font-size: 12px; line-height: 1.8; }
           .footer-link { color: #7c3aed; text-decoration: none; font-weight: 500; }
-          .wave-bars { display: flex; justify-content: center; align-items: flex-end; gap: 4px; height: 40px; margin-bottom: 8px; }
-          .wave-bar { width: 6px; background: linear-gradient(to top, #00d4ff, #5b21b6, #ff6b35); border-radius: 3px; }
+          .logo-svg { margin: 0 auto 12px; }
         </style>
       </head>
       <body>
         <div class="wrapper">
           <div class="container">
             <div class="logo-container">
-              <div class="wave-bars">
-                <div class="wave-bar" style="height: 20px;"></div>
-                <div class="wave-bar" style="height: 30px;"></div>
-                <div class="wave-bar" style="height: 40px;"></div>
-                <div class="wave-bar" style="height: 24px;"></div>
-                <div class="wave-bar" style="height: 36px;"></div>
-              </div>
+              <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style="width: 80px; height: 80px; margin: 0 auto; display: block;">
+                <defs>
+                  <linearGradient id="waveGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" style="stop-color:#00d4ff;stop-opacity:1" />
+                    <stop offset="50%" style="stop-color:#5b21b6;stop-opacity:1" />
+                    <stop offset="100%" style="stop-color:#ff6b35;stop-opacity:1" />
+                  </linearGradient>
+                </defs>
+                <g transform="translate(20, 30)">
+                  <rect x="0" y="15" width="4" height="30" fill="url(#waveGrad)" rx="2"/>
+                  <rect x="10" y="10" width="4" height="40" fill="url(#waveGrad)" rx="2"/>
+                  <rect x="20" y="5" width="4" height="50" fill="url(#waveGrad)" rx="2"/>
+                  <rect x="30" y="12" width="4" height="36" fill="url(#waveGrad)" rx="2"/>
+                  <rect x="40" y="8" width="4" height="44" fill="url(#waveGrad)" rx="2"/>
+                  <path d="M52 22 L62 17 L60 19.5 L68 19.5 L68 27.5 L60 27.5 L62 30 Z" fill="url(#waveGrad)" opacity="0.9"/>
+                  <path d="M52 35 L62 30 L60 32.5 L68 32.5 L68 40.5 L60 40.5 L62 43 Z" fill="url(#waveGrad)" opacity="0.7"/>
+                </g>
+                <circle cx="82" cy="32" r="3" fill="#8b5cf6" opacity="0.7"/>
+                <circle cx="88" cy="48" r="2" fill="#ec4899" opacity="0.5"/>
+                <circle cx="92" cy="38" r="1.5" fill="#6366f1" opacity="0.6"/>
+              </svg>
               <div class="logo-text">RDistro</div>
             </div>
             

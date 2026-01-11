@@ -25,20 +25,27 @@ export default function PreviewEmail() {
         }}>
           {/* Logo */}
           <div style={{ textAlign: "center", marginBottom: "32px" }}>
-            <div style={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "flex-end",
-              gap: "4px",
-              height: "40px",
-              marginBottom: "8px"
-            }}>
-              <div style={{ width: "6px", height: "20px", background: "linear-gradient(to top, #00d4ff, #5b21b6, #ff6b35)", borderRadius: "3px" }}></div>
-              <div style={{ width: "6px", height: "30px", background: "linear-gradient(to top, #00d4ff, #5b21b6, #ff6b35)", borderRadius: "3px" }}></div>
-              <div style={{ width: "6px", height: "40px", background: "linear-gradient(to top, #00d4ff, #5b21b6, #ff6b35)", borderRadius: "3px" }}></div>
-              <div style={{ width: "6px", height: "24px", background: "linear-gradient(to top, #00d4ff, #5b21b6, #ff6b35)", borderRadius: "3px" }}></div>
-              <div style={{ width: "6px", height: "36px", background: "linear-gradient(to top, #00d4ff, #5b21b6, #ff6b35)", borderRadius: "3px" }}></div>
-            </div>
+            <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style={{ width: "80px", height: "80px", margin: "0 auto", display: "block" }}>
+              <defs>
+                <linearGradient id="waveGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" style={{ stopColor: "#00d4ff", stopOpacity: 1 }} />
+                  <stop offset="50%" style={{ stopColor: "#5b21b6", stopOpacity: 1 }} />
+                  <stop offset="100%" style={{ stopColor: "#ff6b35", stopOpacity: 1 }} />
+                </linearGradient>
+              </defs>
+              <g transform="translate(20, 30)">
+                <rect x="0" y="15" width="4" height="30" fill="url(#waveGrad)" rx="2"/>
+                <rect x="10" y="10" width="4" height="40" fill="url(#waveGrad)" rx="2"/>
+                <rect x="20" y="5" width="4" height="50" fill="url(#waveGrad)" rx="2"/>
+                <rect x="30" y="12" width="4" height="36" fill="url(#waveGrad)" rx="2"/>
+                <rect x="40" y="8" width="4" height="44" fill="url(#waveGrad)" rx="2"/>
+                <path d="M52 22 L62 17 L60 19.5 L68 19.5 L68 27.5 L60 27.5 L62 30 Z" fill="url(#waveGrad)" opacity="0.9"/>
+                <path d="M52 35 L62 30 L60 32.5 L68 32.5 L68 40.5 L60 40.5 L62 43 Z" fill="url(#waveGrad)" opacity="0.7"/>
+              </g>
+              <circle cx="82" cy="32" r="3" fill="#8b5cf6" opacity="0.7"/>
+              <circle cx="88" cy="48" r="2" fill="#ec4899" opacity="0.5"/>
+              <circle cx="92" cy="38" r="1.5" fill="#6366f1" opacity="0.6"/>
+            </svg>
             <div style={{
               fontSize: "28px",
               fontWeight: 800,
