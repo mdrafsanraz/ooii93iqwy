@@ -18,9 +18,10 @@ function SuccessContent() {
     // Google Ads conversion tracking with transaction ID
     if (typeof window !== 'undefined' && typeof (window as any).gtag === 'function') {
       // Generate fallback transaction ID if none provided
-      const txnId = transactionId || `RD-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+      const fallbackId = 'RD-' + Date.now() + '-' + Math.random().toString(36).slice(2, 11)
+      const txnId = transactionId || fallbackId
       
-      (window as any).gtag('event', 'conversion', {
+      ;(window as any).gtag('event', 'conversion', {
         'send_to': 'AW-17911221416/hDrjCPnr0e4bEKiZ3txC',
         'transaction_id': txnId
       })
