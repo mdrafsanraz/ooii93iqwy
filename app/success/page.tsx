@@ -13,6 +13,15 @@ function SuccessContent() {
 
   useEffect(() => {
     const timer = setTimeout(() => setConfetti(false), 5000)
+    
+    // Google Ads conversion tracking
+    if (typeof window !== 'undefined' && typeof (window as any).gtag === 'function') {
+      (window as any).gtag('event', 'conversion', {
+        'send_to': 'AW-17911221416/hDrjCPnr0e4bEKiZ3txC',
+        'transaction_id': ''
+      })
+    }
+    
     return () => clearTimeout(timer)
   }, [])
 
