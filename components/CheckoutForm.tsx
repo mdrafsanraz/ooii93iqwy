@@ -42,16 +42,16 @@ export default function CheckoutForm({ formData, paymentType = 'payment' }: Chec
     }
 
     const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://rdistro.net'
-    const returnUrl = formData.freeTrial 
-      ? `${baseUrl}/success?trial=true`
-      : `${baseUrl}/success`
+    
+    // Generate a unique transaction ID for tracking
+    const generateTransactionId = () => `RD-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
 
     // Use confirmSetup for trials (SetupIntent), confirmPayment for paid (PaymentIntent)
     if (paymentType === 'setup' || formData.freeTrial) {
-      const { error: confirmError } = await stripe.confirmSetup({
+      const { error: confirmError, setupIntent } = await stripe.confirmSetup({
         elements,
         confirmParams: {
-          return_url: returnUrl,
+          return_url: `${baseUrl}/success?trial=true`,
         },
         redirect: 'if_required',
       })
@@ -62,13 +62,14 @@ export default function CheckoutForm({ formData, paymentType = 'payment' }: Chec
         return
       }
 
-      // Success - send notification and redirect
+      // Success - send notification and redirect with transaction ID
+      const transactionId = setupIntent?.id || generateTransactionId()
       await sendNotification()
-      window.location.href = returnUrl
+      window.location.href = `${baseUrl}/success?trial=true&txn_id=${transactionId}`
     } else {
       const { error: confirmError, paymentIntent } = await stripe.confirmPayment({
         elements,
-        confirmParams: { return_url: returnUrl },
+        confirmParams: { return_url: `${baseUrl}/success` },
         redirect: 'if_required',
       })
 
@@ -80,7 +81,7 @@ export default function CheckoutForm({ formData, paymentType = 'payment' }: Chec
 
       if (paymentIntent?.status === 'succeeded') {
         await sendNotification(paymentIntent.id, paymentIntent.amount / 100)
-        window.location.href = returnUrl
+        window.location.href = `${baseUrl}/success?txn_id=${paymentIntent.id}`
       }
     }
 

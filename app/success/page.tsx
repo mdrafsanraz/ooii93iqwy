@@ -9,21 +9,25 @@ import Footer from '@/components/Footer'
 function SuccessContent() {
   const searchParams = useSearchParams()
   const isTrial = searchParams.get('trial') === 'true'
+  const transactionId = searchParams.get('txn_id') || searchParams.get('setup_intent') || searchParams.get('payment_intent')
   const [confetti, setConfetti] = useState(true)
 
   useEffect(() => {
     const timer = setTimeout(() => setConfetti(false), 5000)
     
-    // Google Ads conversion tracking
+    // Google Ads conversion tracking with transaction ID
     if (typeof window !== 'undefined' && typeof (window as any).gtag === 'function') {
+      // Generate fallback transaction ID if none provided
+      const txnId = transactionId || `RD-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+      
       (window as any).gtag('event', 'conversion', {
         'send_to': 'AW-17911221416/hDrjCPnr0e4bEKiZ3txC',
-        'transaction_id': ''
+        'transaction_id': txnId
       })
     }
     
     return () => clearTimeout(timer)
-  }, [])
+  }, [transactionId])
 
   return (
     <>
