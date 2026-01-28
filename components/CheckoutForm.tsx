@@ -41,9 +41,10 @@ export default function CheckoutForm({ formData, paymentType = 'payment' }: Chec
       return
     }
 
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://rdistro.net'
     const returnUrl = formData.freeTrial 
-      ? 'https://rdistro.net/success.html?trial=true'
-      : 'https://rdistro.net/success.html'
+      ? `${baseUrl}/success?trial=true`
+      : `${baseUrl}/success`
 
     // Use confirmSetup for trials (SetupIntent), confirmPayment for paid (PaymentIntent)
     if (paymentType === 'setup' || formData.freeTrial) {
