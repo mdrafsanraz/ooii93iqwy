@@ -551,7 +551,7 @@ async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent)
     if (paymentIntent.customer) {
       try {
         const customer = await stripe.customers.retrieve(paymentIntent.customer as string)
-        if (typeof customer !== 'deleted' && customer.email) {
+        if (!('deleted' in customer) && customer.email) {
           // Check if registration exists by email
           const existing = await db.collection('registrations').findOne({
             email: customer.email.toLowerCase(),
