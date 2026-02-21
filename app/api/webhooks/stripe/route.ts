@@ -7,8 +7,6 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
   apiVersion: '2023-10-16',
 })
 
-const resend = new Resend(process.env.RESEND_API_KEY)
-
 // Disable body parsing for webhook signature verification
 export const runtime = 'nodejs'
 
@@ -38,6 +36,14 @@ export async function POST(request: NextRequest) {
     console.log('Stripe webhook received:', event.type)
 
     switch (event.type) {
+      case 'payment_intent.succeeded':
+        await handlePaymentIntentSucceeded(event.data.object as Stripe.PaymentIntent)
+        break
+
+      case 'setup_intent.succeeded':
+        await handleSetupIntentSucceeded(event.data.object as Stripe.SetupIntent)
+        break
+
       case 'customer.subscription.updated':
         await handleSubscriptionUpdated(event.data.object as Stripe.Subscription)
         break
@@ -124,6 +130,11 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
 
     // Send cancellation email to customer
     try {
+      if (!process.env.RESEND_API_KEY) {
+        console.log('RESEND_API_KEY not configured, skipping email')
+        return
+      }
+      const resend = new Resend(process.env.RESEND_API_KEY)
       await resend.emails.send({
         from: 'RDistro <registration@rdistro.net>',
         to: email,
@@ -264,6 +275,11 @@ async function handleInvoicePaid(invoice: Stripe.Invoice) {
 
   // Send confirmation email to customer
   try {
+    if (!process.env.RESEND_API_KEY) {
+      console.log('RESEND_API_KEY not configured, skipping email')
+      return
+    }
+    const resend = new Resend(process.env.RESEND_API_KEY)
     await resend.emails.send({
       from: 'RDistro <registration@rdistro.net>',
       to: customerEmail,
@@ -332,6 +348,11 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
 
   // Send failure notification to customer
   try {
+    if (!process.env.RESEND_API_KEY) {
+      console.log('RESEND_API_KEY not configured, skipping email')
+      return
+    }
+    const resend = new Resend(process.env.RESEND_API_KEY)
     await resend.emails.send({
       from: 'RDistro <registration@rdistro.net>',
       to: customerEmail,
@@ -402,6 +423,11 @@ async function handleTrialWillEnd(subscription: Stripe.Subscription) {
 
   // Send reminder email
   try {
+    if (!process.env.RESEND_API_KEY) {
+      console.log('RESEND_API_KEY not configured, skipping email')
+      return
+    }
+    const resend = new Resend(process.env.RESEND_API_KEY)
     await resend.emails.send({
       from: 'RDistro <registration@rdistro.net>',
       to: email,
@@ -458,11 +484,217 @@ async function handleTrialWillEnd(subscription: Stripe.Subscription) {
   )
 }
 
-// Helper to send admin notifications
-async function sendAdminNotification(subject: string, message: string) {
-  if (!process.env.ADMIN_EMAIL) return
+// Handle successful payment intent (initial payment)
+async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent) {
+  console.log('Payment intent succeeded:', paymentIntent.id)
+
+  const db = await getDatabase()
+  const metadata = paymentIntent.metadata
+
+  // Check if registration already exists
+  const existingRegistration = await db.collection('registrations').findOne({
+    $or: [
+      { email: metadata.email?.toLowerCase() },
+      { paymentIntentId: paymentIntent.id },
+    ],
+  })
+
+  if (existingRegistration) {
+    console.log('Registration already exists for payment intent:', paymentIntent.id)
+    // Update payment status if needed
+    await db.collection('registrations').updateOne(
+      { _id: existingRegistration._id },
+      {
+        $set: {
+          paymentStatus: 'succeeded',
+          paymentIntentId: paymentIntent.id,
+        },
+      }
+    )
+    return
+  }
+
+  // If we have all required metadata, create registration
+  if (metadata.email && metadata.name && metadata.plan) {
+    try {
+      const registration = {
+        plan: metadata.plan as 'artist' | 'label',
+        name: metadata.name,
+        email: metadata.email.toLowerCase(),
+        phone: metadata.phone || '',
+        country: metadata.country || '',
+        artistName: metadata.artistName || metadata.artist_name || '',
+        labelName: metadata.labelName || metadata.label_name || '',
+        socialLinks: metadata.socialLinks || metadata.social_links || '',
+        spotifyLink: metadata.spotifyLink || metadata.spotify_link || '',
+        paymentIntentId: paymentIntent.id,
+        amount: paymentIntent.amount / 100,
+        freeTrial: metadata.freeTrial === 'true' || false,
+        trialEndDate: metadata.trialEndDate || null,
+        paymentStatus: 'succeeded' as const,
+        id: `reg_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
+        createdAt: new Date().toISOString(),
+        accountCreated: false,
+      }
+
+      await db.collection('registrations').insertOne(registration)
+      console.log('Registration created from webhook for:', metadata.email)
+
+      // Send notification emails
+      await sendRegistrationEmails(registration, false)
+    } catch (error) {
+      console.error('Error creating registration from payment intent webhook:', error)
+    }
+  } else {
+    console.log('Missing metadata in payment intent:', paymentIntent.id, 'Metadata:', metadata)
+    // Try to get customer info from Stripe
+    if (paymentIntent.customer) {
+      try {
+        const customer = await stripe.customers.retrieve(paymentIntent.customer as string)
+        if (typeof customer !== 'deleted' && customer.email) {
+          // Check if registration exists by email
+          const existing = await db.collection('registrations').findOne({
+            email: customer.email.toLowerCase(),
+          })
+          if (!existing) {
+            console.log('Customer found but no registration. Customer email:', customer.email)
+            // Could send admin notification here
+          }
+        }
+      } catch (err) {
+        console.error('Error retrieving customer:', err)
+      }
+    }
+  }
+}
+
+// Handle successful setup intent (trial setup)
+async function handleSetupIntentSucceeded(setupIntent: Stripe.SetupIntent) {
+  console.log('Setup intent succeeded:', setupIntent.id)
+
+  const db = await getDatabase()
+  const metadata = setupIntent.metadata
+
+  // Check if registration already exists
+  const existingRegistration = await db.collection('registrations').findOne({
+    $or: [
+      { email: metadata.email?.toLowerCase() },
+      { paymentIntentId: setupIntent.id },
+    ],
+  })
+
+  if (existingRegistration) {
+    console.log('Registration already exists for setup intent:', setupIntent.id)
+    // Update payment status if needed
+    await db.collection('registrations').updateOne(
+      { _id: existingRegistration._id },
+      {
+        $set: {
+          paymentStatus: 'trial',
+          paymentIntentId: setupIntent.id,
+        },
+      }
+    )
+    return
+  }
+
+  // If we have all required metadata, create registration
+  if (metadata.email && metadata.name && metadata.plan) {
+    try {
+      const trialEndDate = metadata.trialEndDate
+        ? metadata.trialEndDate
+        : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+
+      const registration = {
+        plan: metadata.plan as 'artist' | 'label',
+        name: metadata.name,
+        email: metadata.email.toLowerCase(),
+        phone: metadata.phone || '',
+        country: metadata.country || '',
+        artistName: metadata.artistName || metadata.artist_name || '',
+        labelName: metadata.labelName || metadata.label_name || '',
+        socialLinks: metadata.socialLinks || metadata.social_links || '',
+        spotifyLink: metadata.spotifyLink || metadata.spotify_link || '',
+        paymentIntentId: setupIntent.id,
+        amount: 0,
+        freeTrial: true,
+        trialEndDate,
+        paymentStatus: 'trial' as const,
+        id: `reg_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
+        createdAt: new Date().toISOString(),
+        accountCreated: false,
+      }
+
+      await db.collection('registrations').insertOne(registration)
+      console.log('Registration created from webhook (trial) for:', metadata.email)
+
+      // Send notification emails
+      await sendRegistrationEmails(registration, true)
+    } catch (error) {
+      console.error('Error creating registration from setup intent webhook:', error)
+    }
+  } else {
+    console.log('Missing metadata in setup intent:', setupIntent.id, 'Metadata:', metadata)
+  }
+}
+
+// Helper to send registration emails (extracted from send-notification route)
+async function sendRegistrationEmails(registration: any, isTrial: boolean) {
+  if (!process.env.RESEND_API_KEY || !process.env.ADMIN_EMAIL) {
+    console.log('Email service not configured, skipping emails')
+    return
+  }
 
   try {
+    const resend = new Resend(process.env.RESEND_API_KEY)
+    const planName = registration.plan === 'artist' ? 'Artist' : 'Label'
+    const entityName = registration.plan === 'artist' ? registration.artistName : registration.labelName
+
+    // Send admin email (simplified version)
+    await resend.emails.send({
+      from: 'RDistro <registration@rdistro.net>',
+      to: process.env.ADMIN_EMAIL,
+      subject: `${isTrial ? '🎁 Free Trial' : '🎵'} New ${planName}: ${entityName} ${isTrial ? '(Trial)' : `($${registration.amount})`}`,
+      html: `
+        <div style="font-family: sans-serif; padding: 20px;">
+          <h2>New ${planName} Registration ${isTrial ? '(Free Trial)' : ''}</h2>
+          <p><strong>Name:</strong> ${registration.name}</p>
+          <p><strong>Email:</strong> ${registration.email}</p>
+          <p><strong>Plan:</strong> ${planName}</p>
+          <p><strong>Amount:</strong> $${registration.amount}</p>
+          <p><strong>Payment ID:</strong> ${registration.paymentIntentId}</p>
+          <p><a href="https://app.rdistro.com/admin">View in Admin Dashboard</a></p>
+        </div>
+      `,
+    })
+
+    // Send customer email (simplified version)
+    await resend.emails.send({
+      from: 'RDistro <registration@rdistro.net>',
+      to: registration.email,
+      subject: isTrial ? 'Your Free Trial Has Started - RDistro' : '🎉 Welcome to RDistro - Registration Successful!',
+      html: `
+        <div style="font-family: sans-serif; padding: 20px;">
+          <h2>Welcome to RDistro!</h2>
+          <p>Hi ${registration.name},</p>
+          <p>${isTrial ? 'Your free trial has started. Your account will be set up within 24-48 hours.' : 'Thank you for your registration. Your account will be set up within 24-48 hours.'}</p>
+          <p>Best regards,<br>The RDistro Team</p>
+        </div>
+      `,
+    })
+
+    console.log('Registration emails sent for:', registration.email)
+  } catch (error) {
+    console.error('Error sending registration emails:', error)
+  }
+}
+
+// Helper to send admin notifications
+async function sendAdminNotification(subject: string, message: string) {
+  if (!process.env.ADMIN_EMAIL || !process.env.RESEND_API_KEY) return
+
+  try {
+    const resend = new Resend(process.env.RESEND_API_KEY)
     await resend.emails.send({
       from: 'RDistro <registration@rdistro.net>',
       to: process.env.ADMIN_EMAIL,

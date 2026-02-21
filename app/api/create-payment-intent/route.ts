@@ -17,7 +17,18 @@ export async function POST(request: NextRequest) {
     })
 
     const body = await request.json()
-    const { plan, email, freeTrial } = body
+    const { 
+      plan, 
+      email, 
+      freeTrial,
+      name,
+      phone,
+      country,
+      artistName,
+      labelName,
+      socialLinks,
+      spotifyLink,
+    } = body
 
     console.log('Payment request:', { plan, email, freeTrial })
 
@@ -91,12 +102,19 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create a customer
+    // Create a customer with full metadata
     const customer = await stripe.customers.create({
       email,
       metadata: {
         plan,
         freeTrial: freeTrial ? 'true' : 'false',
+        name: name || '',
+        phone: phone || '',
+        country: country || '',
+        artistName: artistName || '',
+        labelName: labelName || '',
+        socialLinks: socialLinks || '',
+        spotifyLink: spotifyLink || '',
       },
     })
 
@@ -113,6 +131,16 @@ export async function POST(request: NextRequest) {
         plan,
         freeTrial: freeTrial ? 'true' : 'false',
         email,
+        name: name || '',
+        phone: phone || '',
+        country: country || '',
+        artistName: artistName || '',
+        labelName: labelName || '',
+        socialLinks: socialLinks || '',
+        spotifyLink: spotifyLink || '',
+        trialEndDate: freeTrial && plan === 'label'
+          ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+          : null,
       },
     }
 
@@ -125,13 +153,33 @@ export async function POST(request: NextRequest) {
 
     console.log('Created subscription:', subscription.id, 'Status:', subscription.status)
 
-    // Get the client secret
+    // Get the client secret and add metadata to payment/setup intents
     let clientSecret: string | null = null
     let paymentType = 'payment'
+    const customerMetadata = {
+      subscription_id: subscription.id,
+      plan,
+      freeTrial: freeTrial ? 'true' : 'false',
+      email,
+      name: name || '',
+      phone: phone || '',
+      country: country || '',
+      artistName: artistName || '',
+      labelName: labelName || '',
+      socialLinks: socialLinks || '',
+      spotifyLink: spotifyLink || '',
+      trialEndDate: freeTrial && plan === 'label'
+        ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+        : null,
+    }
 
     if (subscription.pending_setup_intent) {
       // Trial subscription - needs SetupIntent
       const setupIntent = subscription.pending_setup_intent as Stripe.SetupIntent
+      // Update setup intent with metadata
+      await stripe.setupIntents.update(setupIntent.id, {
+        metadata: customerMetadata,
+      })
       clientSecret = setupIntent.client_secret
       paymentType = 'setup'
     } else if (subscription.latest_invoice) {
@@ -139,6 +187,10 @@ export async function POST(request: NextRequest) {
       const invoice = subscription.latest_invoice as Stripe.Invoice
       if (invoice.payment_intent) {
         const paymentIntent = invoice.payment_intent as Stripe.PaymentIntent
+        // Update payment intent with metadata
+        await stripe.paymentIntents.update(paymentIntent.id, {
+          metadata: customerMetadata,
+        })
         clientSecret = paymentIntent.client_secret
         paymentType = 'payment'
       }
@@ -149,11 +201,7 @@ export async function POST(request: NextRequest) {
       const setupIntent = await stripe.setupIntents.create({
         customer: customer.id,
         payment_method_types: ['card'],
-        metadata: {
-          subscription_id: subscription.id,
-          plan,
-          freeTrial: freeTrial ? 'true' : 'false',
-        },
+        metadata: customerMetadata,
       })
       clientSecret = setupIntent.client_secret
       paymentType = 'setup'

@@ -127,6 +127,13 @@ export default function SignupPage() {
           plan: formData.plan, 
           email: formData.email,
           freeTrial: formData.freeTrial,
+          name: formData.name,
+          phone: formData.phone,
+          country: formData.country,
+          artistName: formData.artistName,
+          labelName: formData.labelName,
+          socialLinks: formData.socialLinks,
+          spotifyLink: formData.spotifyLink,
         }),
       })
       const data = await response.json()

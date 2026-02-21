@@ -64,7 +64,13 @@ export default function CheckoutForm({ formData, paymentType = 'payment' }: Chec
 
       // Success - send notification and redirect with transaction ID
       const transactionId = setupIntent?.id || generateTransactionId()
-      await sendNotification()
+      try {
+        await sendNotification()
+        console.log('Notification sent successfully for trial')
+      } catch (notifError) {
+        console.error('Failed to send notification:', notifError)
+        // Continue anyway - webhook will capture it
+      }
       window.location.href = `${baseUrl}/success?trial=true&txn_id=${transactionId}`
     } else {
       const { error: confirmError, paymentIntent } = await stripe.confirmPayment({
@@ -80,7 +86,13 @@ export default function CheckoutForm({ formData, paymentType = 'payment' }: Chec
       }
 
       if (paymentIntent?.status === 'succeeded') {
-        await sendNotification(paymentIntent.id, paymentIntent.amount / 100)
+        try {
+          await sendNotification(paymentIntent.id, paymentIntent.amount / 100)
+          console.log('Notification sent successfully for payment')
+        } catch (notifError) {
+          console.error('Failed to send notification:', notifError)
+          // Continue anyway - webhook will capture it
+        }
         window.location.href = `${baseUrl}/success?txn_id=${paymentIntent.id}`
       }
     }
@@ -90,7 +102,7 @@ export default function CheckoutForm({ formData, paymentType = 'payment' }: Chec
 
   const sendNotification = async (paymentId?: string, amount?: number) => {
     try {
-      await fetch('/api/send-notification', {
+      const response = await fetch('/api/send-notification', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -103,7 +115,20 @@ export default function CheckoutForm({ formData, paymentType = 'payment' }: Chec
             : null,
         }),
       })
-    } catch { /* continue */ }
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Failed to send notification')
+      }
+      
+      const result = await response.json()
+      console.log('Notification API response:', result)
+      return result
+    } catch (error) {
+      console.error('Notification error:', error)
+      // Re-throw so caller can handle it
+      throw error
+    }
   }
 
   const getButtonText = () => {
