@@ -489,7 +489,7 @@ async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent)
   console.log('Payment intent succeeded:', paymentIntent.id)
 
   const db = await getDatabase()
-  const metadata = paymentIntent.metadata
+  const metadata = paymentIntent.metadata || {}
 
   // Check if registration already exists
   const existingRegistration = await db.collection('registrations').findOne({
@@ -573,7 +573,7 @@ async function handleSetupIntentSucceeded(setupIntent: Stripe.SetupIntent) {
   console.log('Setup intent succeeded:', setupIntent.id)
 
   const db = await getDatabase()
-  const metadata = setupIntent.metadata
+  const metadata = setupIntent.metadata || {}
 
   // Check if registration already exists
   const existingRegistration = await db.collection('registrations').findOne({
