@@ -371,7 +371,7 @@ export default function SignupPage() {
                   <h2 className="text-lg font-bold text-[var(--text)] text-center mb-4">Choose Plan</h2>
 
                   {/* Free Trial Toggle */}
-                  {trialEnabled ? (
+                  {trialEnabled && (
                     <div className="mb-4 p-3 rounded-xl bg-gradient-to-r from-primary/10 to-secondary/10 border border-primary/20">
                       <label className="flex items-center justify-between cursor-pointer gap-3">
                         <div className="flex-1 min-w-0">
@@ -390,16 +390,6 @@ export default function SignupPage() {
                           </div>
                         </div>
                       </label>
-                    </div>
-                  ) : (
-                    <div className="mb-4 p-3 rounded-xl bg-gray-100 border border-gray-200">
-                      <div className="flex items-center gap-2">
-                        <span className="text-gray-400">🎁</span>
-                        <div>
-                          <p className="font-medium text-sm text-gray-400">Free Trial Unavailable</p>
-                          <p className="text-[10px] text-gray-400">Trial is not available at this time</p>
-                        </div>
-                      </div>
                     </div>
                   )}
 

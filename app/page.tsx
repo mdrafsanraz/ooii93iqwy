@@ -7,6 +7,7 @@ import Footer from '@/components/Footer'
 
 export default function HomePage() {
   const [artistPlanMode, setArtistPlanMode] = useState<'free' | 'paid'>('free')
+  const [trialEnabled, setTrialEnabled] = useState(true)
 
   useEffect(() => {
     // Smooth scrolling for anchor links
@@ -61,9 +62,11 @@ export default function HomePage() {
       .then(res => res.json())
       .then(data => {
         setArtistPlanMode(data.artistPlanMode === 'paid' ? 'paid' : 'free')
+        setTrialEnabled(data.trialEnabled ?? true)
       })
       .catch(() => {
         setArtistPlanMode('free')
+        setTrialEnabled(true)
       })
   }, [])
 
@@ -349,9 +352,11 @@ export default function HomePage() {
               <h3 className="text-lg font-semibold text-black mb-4">🏢 Label</h3>
               <div className="text-5xl font-bold text-black mb-2">$20</div>
               <div className="text-gray-600 mb-2">per year</div>
-              <div className="inline-block bg-green-500 text-white px-3 py-1 rounded-full text-xs font-medium mb-6">
-                🎁 1 Month Free Trial
-              </div>
+              {trialEnabled && (
+                <div className="inline-block bg-green-500 text-white px-3 py-1 rounded-full text-xs font-medium mb-6">
+                  🎁 1 Month Free Trial
+                </div>
+              )}
               <ul className="text-left space-y-3 mb-8">
                 {['Everything in Artist', 'Unlimited Artist', 'Advanced analytics', 'Priority support', 'Release in 24 hours'].map((feature, i) => (
                   <li key={i} className="flex items-center gap-2 text-gray-600 hover:text-black hover:translate-x-1 transition-all">
