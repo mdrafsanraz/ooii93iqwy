@@ -27,6 +27,8 @@ interface FormData {
   freeTrial: boolean
 }
 
+type ValidationErrors = Partial<Record<keyof FormData, string>>
+
 function getPlans(artistPlanMode: 'free' | 'paid') {
   return {
     artist: {
@@ -84,6 +86,7 @@ export default function SignupPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [trialEnabled, setTrialEnabled] = useState(true)
+  const [validationErrors, setValidationErrors] = useState<ValidationErrors>({})
   const plans = getPlans(artistPlanMode)
 
   // Fetch trial setting on mount
@@ -116,14 +119,80 @@ export default function SignupPage() {
   }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value })
+    const { name, value } = e.target
+    setFormData({ ...formData, [name]: value })
+    setValidationErrors(prev => ({ ...prev, [name]: '' }))
   }
 
   const goToDetails = () => {
     if (formData.plan) setStep('details')
   }
 
+  const isLinkLike = (value: string) => {
+    if (!value.trim()) return false
+    const links = value
+      .split(/[,\n]/)
+      .map(link => link.trim())
+      .filter(Boolean)
+
+    if (links.length === 0) return false
+
+    return links.every(link => {
+      try {
+        const normalized = /^(https?:)?\/\//i.test(link) ? link : `https://${link}`
+        const parsed = new URL(normalized)
+        return !!parsed.hostname && parsed.hostname.includes('.')
+      } catch {
+        return false
+      }
+    })
+  }
+
+  const validateDetails = (): ValidationErrors => {
+    const errors: ValidationErrors = {}
+
+    if (!formData.name.trim()) errors.name = 'Name is required'
+    if (!formData.phone.trim()) errors.phone = 'Phone is required'
+    if (!formData.country.trim()) errors.country = 'Country is required'
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!formData.email.trim()) {
+      errors.email = 'Email is required'
+    } else if (!emailRegex.test(formData.email.trim())) {
+      errors.email = 'Enter a valid email address'
+    }
+
+    if (formData.plan === 'artist' && !formData.artistName.trim()) {
+      errors.artistName = 'Artist name is required'
+    }
+    if (formData.plan === 'label' && !formData.labelName.trim()) {
+      errors.labelName = 'Label name is required'
+    }
+
+    if (!formData.socialLinks.trim()) {
+      errors.socialLinks = 'At least one social link is required'
+    } else if (!isLinkLike(formData.socialLinks)) {
+      errors.socialLinks = 'Enter a valid social link (or comma-separated links)'
+    }
+
+    if (formData.freeTrial) {
+      if (!formData.spotifyLink.trim()) {
+        errors.spotifyLink = 'Spotify / music link is required for trial'
+      } else if (!isLinkLike(formData.spotifyLink)) {
+        errors.spotifyLink = 'Enter a valid Spotify / music link'
+      }
+    } else if (formData.spotifyLink.trim() && !isLinkLike(formData.spotifyLink)) {
+      errors.spotifyLink = 'Enter a valid Spotify / music link'
+    }
+
+    return errors
+  }
+
   const completeFreeArtistSignup = async () => {
+    const errors = validateDetails()
+    setValidationErrors(errors)
+    if (Object.keys(errors).length > 0) return
+
     setIsLoading(true)
     setError(null)
     try {
@@ -159,6 +228,10 @@ export default function SignupPage() {
   }
 
   const goToPayment = async () => {
+    const errors = validateDetails()
+    setValidationErrors(errors)
+    if (Object.keys(errors).length > 0) return
+
     if (formData.plan === 'artist' && artistPlanMode === 'free') {
       await completeFreeArtistSignup()
       return
@@ -205,40 +278,7 @@ export default function SignupPage() {
   }
 
   const isDetailsValid = () => {
-    const { name, email, phone, country, socialLinks, spotifyLink } = formData
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(email)) return false
-
-    const hasBasic = name && email && phone && country
-
-    const isValidUrl = (value: string) => {
-      if (!value) return true
-      try {
-        // Will throw for invalid URLs
-        new URL(value)
-        return true
-      } catch {
-        return false
-      }
-    }
-
-    if (!isValidUrl(socialLinks)) return false
-    if (!isValidUrl(spotifyLink)) return false
-
-    if (formData.plan === 'artist') {
-      return hasBasic && formData.artistName
-    }
-    
-    if (formData.plan === 'label') {
-      // If free trial, social links AND spotify link are required
-      if (formData.freeTrial) {
-        return hasBasic && formData.labelName && formData.socialLinks && formData.spotifyLink
-      }
-      return hasBasic && formData.labelName
-    }
-    
-    return false
+    return Object.keys(validateDetails()).length === 0
   }
 
   const stepIndex = ['plan', 'details', 'payment'].indexOf(step)
@@ -504,6 +544,9 @@ export default function SignupPage() {
                           placeholder="John Doe"
                           className="input-field text-sm py-2.5"
                         />
+                        {validationErrors.name && (
+                          <p className="text-[10px] text-error mt-1">{validationErrors.name}</p>
+                        )}
                       </div>
                       <div>
                         <label className="block text-xs font-medium text-[var(--text)] mb-1">Email *</label>
@@ -515,6 +558,9 @@ export default function SignupPage() {
                           placeholder="john@email.com"
                           className="input-field text-sm py-2.5"
                         />
+                        {validationErrors.email && (
+                          <p className="text-[10px] text-error mt-1">{validationErrors.email}</p>
+                        )}
                       </div>
                     </div>
 
@@ -529,6 +575,9 @@ export default function SignupPage() {
                           placeholder="+1 234 567"
                           className="input-field text-sm py-2.5"
                         />
+                        {validationErrors.phone && (
+                          <p className="text-[10px] text-error mt-1">{validationErrors.phone}</p>
+                        )}
                       </div>
                       <div>
                         <label className="block text-xs font-medium text-[var(--text)] mb-1">Country *</label>
@@ -540,6 +589,9 @@ export default function SignupPage() {
                           placeholder="USA"
                           className="input-field text-sm py-2.5"
                         />
+                        {validationErrors.country && (
+                          <p className="text-[10px] text-error mt-1">{validationErrors.country}</p>
+                        )}
                       </div>
                     </div>
 
@@ -555,28 +607,31 @@ export default function SignupPage() {
                         placeholder={formData.plan === 'artist' ? 'Stage name' : 'Label name'}
                         className="input-field text-sm py-2.5"
                       />
+                      {formData.plan === 'artist' && validationErrors.artistName && (
+                        <p className="text-[10px] text-error mt-1">{validationErrors.artistName}</p>
+                      )}
+                      {formData.plan === 'label' && validationErrors.labelName && (
+                        <p className="text-[10px] text-error mt-1">{validationErrors.labelName}</p>
+                      )}
                     </div>
 
                     <div>
                       <label className="block text-xs font-medium text-[var(--text)] mb-1">
-                        {formData.freeTrial ? (
-                          <>Facebook / Instagram * <span className="text-[var(--text-muted)] font-normal">(Required for free trial)</span></>
-                        ) : (
-                          <>Social Links <span className="text-[var(--text-muted)] font-normal">(optional)</span></>
-                        )}
+                        Social Links * <span className="text-[var(--text-muted)] font-normal">(Required)</span>
                       </label>
                       <input
                         type="text"
                         name="socialLinks"
                         value={formData.socialLinks}
                         onChange={handleInputChange}
-                        placeholder={formData.freeTrial ? "facebook.com/yourpage, instagram.com/yourhandle" : "Instagram, Facebook..."}
+                        placeholder="facebook.com/yourpage, instagram.com/yourhandle"
                         className="input-field text-sm py-2.5"
                       />
-                      {formData.freeTrial && (
-                        <p className="text-[10px] text-[var(--text-muted)] mt-1">
-                          Enter your Facebook and/or Instagram profile links
-                        </p>
+                      <p className="text-[10px] text-[var(--text-muted)] mt-1">
+                        Enter at least one social link (you can add multiple, comma-separated)
+                      </p>
+                      {validationErrors.socialLinks && (
+                        <p className="text-[10px] text-error mt-1">{validationErrors.socialLinks}</p>
                       )}
                     </div>
 
@@ -597,6 +652,9 @@ export default function SignupPage() {
                         <p className="text-[10px] text-[var(--text-muted)] mt-1">
                           Spotify, Apple Music, SoundCloud, or YouTube Music link
                         </p>
+                        {validationErrors.spotifyLink && (
+                          <p className="text-[10px] text-error mt-1">{validationErrors.spotifyLink}</p>
+                        )}
                       </div>
                     )}
                   </div>

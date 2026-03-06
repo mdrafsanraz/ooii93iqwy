@@ -3,6 +3,26 @@ import Stripe from 'stripe'
 import { emailExists } from '@/lib/registrations'
 import { getDatabase } from '@/lib/mongodb'
 
+function hasValidLinks(value?: string) {
+  if (!value || !value.trim()) return false
+  const links = value
+    .split(/[,\n]/)
+    .map(link => link.trim())
+    .filter(Boolean)
+
+  if (links.length === 0) return false
+
+  return links.every(link => {
+    try {
+      const normalized = /^(https?:)?\/\//i.test(link) ? link : `https://${link}`
+      const parsed = new URL(normalized)
+      return !!parsed.hostname && parsed.hostname.includes('.')
+    } catch {
+      return false
+    }
+  })
+}
+
 export async function POST(request: NextRequest) {
   try {
     if (!process.env.STRIPE_SECRET_KEY) {
@@ -48,24 +68,21 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const isValidUrl = (value?: string) => {
-      if (!value) return true
-      try {
-        new URL(value)
-        return true
-      } catch {
-        return false
-      }
+    if (!socialLinks?.trim()) {
+      return NextResponse.json(
+        { error: 'Social links are required' },
+        { status: 400 }
+      )
     }
 
-    if (!isValidUrl(socialLinks)) {
+    if (!hasValidLinks(socialLinks)) {
       return NextResponse.json(
         { error: 'Invalid social links URL' },
         { status: 400 }
       )
     }
 
-    if (!isValidUrl(spotifyLink)) {
+    if (spotifyLink && !hasValidLinks(spotifyLink)) {
       return NextResponse.json(
         { error: 'Invalid Spotify / music link URL' },
         { status: 400 }
