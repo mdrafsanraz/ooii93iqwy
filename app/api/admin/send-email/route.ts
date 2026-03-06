@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Resend } from 'resend'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
-
 const VALID_SENDERS = [
   'fatama@rdistro.net',
   'rafsan@rdistro.net',
@@ -24,6 +22,12 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    if (!process.env.RESEND_API_KEY) {
+      return NextResponse.json({ error: 'Email service not configured' }, { status: 500 })
+    }
+
+    const resend = new Resend(process.env.RESEND_API_KEY)
+
     const { from, to, subject, message } = await request.json()
 
     if (!from || !to || !subject || !message) {

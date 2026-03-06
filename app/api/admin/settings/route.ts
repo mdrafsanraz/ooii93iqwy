@@ -7,6 +7,7 @@ const SETTINGS_DOC_ID = 'app_settings'
 interface AppSettings {
   settingsId: string
   trialEnabled: boolean
+  artistPlanMode?: 'free' | 'paid'
   updatedAt?: string
 }
 
@@ -32,6 +33,7 @@ function isAuthorized(request: NextRequest): boolean {
 // Default settings
 const defaultSettings = {
   trialEnabled: true,
+  artistPlanMode: 'free' as const,
 }
 
 // GET - Fetch settings (public for checking trial status)
@@ -42,6 +44,7 @@ export async function GET() {
     
     return NextResponse.json({
       trialEnabled: settings?.trialEnabled ?? defaultSettings.trialEnabled,
+      artistPlanMode: settings?.artistPlanMode ?? defaultSettings.artistPlanMode,
     })
   } catch (error) {
     console.error('Settings GET error:', error)

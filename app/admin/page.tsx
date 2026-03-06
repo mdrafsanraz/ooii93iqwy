@@ -49,6 +49,7 @@ export default function AdminPage() {
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'done'>('all')
   const [checkingAuth, setCheckingAuth] = useState(true)
   const [trialEnabled, setTrialEnabled] = useState(true)
+  const [artistPlanMode, setArtistPlanMode] = useState<'free' | 'paid'>('free')
   const [savingSettings, setSavingSettings] = useState(false)
 
   // Check for saved session on mount
@@ -209,6 +210,7 @@ export default function AdminPage() {
       if (res.ok) {
         const data = await res.json()
         setTrialEnabled(data.trialEnabled ?? true)
+        setArtistPlanMode(data.artistPlanMode === 'paid' ? 'paid' : 'free')
       }
     } catch {
       console.error('Failed to fetch settings')
@@ -231,6 +233,32 @@ export default function AdminPage() {
       
       if (res.ok) {
         setTrialEnabled(newValue)
+      } else {
+        setError('Failed to update settings')
+      }
+    } catch {
+      setError('Failed to update settings')
+    } finally {
+      setSavingSettings(false)
+    }
+  }
+
+  const toggleArtistPlanMode = async () => {
+    const pwd = password || sessionStorage.getItem('adminPassword') || ''
+    setSavingSettings(true)
+    try {
+      const newMode: 'free' | 'paid' = artistPlanMode === 'free' ? 'paid' : 'free'
+      const res = await fetch('/api/admin/settings', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Basic ${btoa(`admin:${pwd}`)}`
+        },
+        body: JSON.stringify({ artistPlanMode: newMode })
+      })
+
+      if (res.ok) {
+        setArtistPlanMode(newMode)
       } else {
         setError('Failed to update settings')
       }
@@ -430,6 +458,38 @@ export default function AdminPage() {
             </p>
           </div>
 
+          <div className="card p-3 sm:p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-[var(--text)]">🎤 Artist Plan</p>
+                <p className="text-[10px] text-[var(--text-muted)]">
+                  {artistPlanMode === 'free'
+                    ? 'FREE • no credit card • 80% royalties'
+                    : 'PAID • previous Artist plan'}
+                </p>
+              </div>
+              <button
+                onClick={toggleArtistPlanMode}
+                disabled={savingSettings}
+                className={`relative w-12 h-6 rounded-full transition-colors flex-shrink-0 ${
+                  artistPlanMode === 'free' ? 'bg-success' : 'bg-gray-300'
+                } ${savingSettings ? 'opacity-50' : ''}`}
+                title="Toggle Artist plan between Free and Paid"
+              >
+                <span
+                  className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
+                    artistPlanMode === 'free' ? 'left-6' : 'left-0.5'
+                  }`}
+                />
+              </button>
+            </div>
+            <p className={`text-[10px] mt-2 ${artistPlanMode === 'free' ? 'text-success' : 'text-[var(--text-muted)]'}`}>
+              {artistPlanMode === 'free' ? '✓ Free mode active' : '✕ Paid mode active'}
+            </p>
+          </div>
+        </div>
+
+        <div className="mb-4">
           <Link href="/admin/emails" className="card p-3 sm:p-4 flex items-center justify-between hover:border-primary/50 transition-colors">
             <div className="flex items-center gap-2">
               <span className="text-xl">📧</span>

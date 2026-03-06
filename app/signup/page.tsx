@@ -27,42 +27,46 @@ interface FormData {
   freeTrial: boolean
 }
 
-const plans = {
-  artist: {
-    name: 'Artist',
-    price: 5,
-    period: 'year',
-    description: 'For independent artists',
-    features: [
-      'Unlimited releases',
-      '150+ platforms',
-      '100% royalties',
-      'Basic analytics',
-      '48h release',
-    ],
-    icon: '🎤',
-    popular: false,
-  },
-  label: {
-    name: 'Label',
-    price: 20,
-    period: 'year',
-    description: 'For labels & managers',
-    features: [
-      'Everything in Artist',
-      'Multi-artist management',
-      'Advanced analytics',
-      'Priority support',
-      '24h release',
-    ],
-    icon: '🏢',
-    popular: true,
-  },
+function getPlans(artistPlanMode: 'free' | 'paid') {
+  return {
+    artist: {
+      name: 'Artist',
+      price: artistPlanMode === 'free' ? 0 : 5,
+      period: 'year',
+      description: artistPlanMode === 'free' ? 'Free for independent artists' : 'For independent artists',
+      features: [
+        'Unlimited releases',
+        '150+ platforms',
+        `${artistPlanMode === 'free' ? '80%' : '100%'} royalties`,
+        'Basic analytics',
+        '48h release',
+        ...(artistPlanMode === 'free' ? ['No credit card required'] : []),
+      ],
+      icon: '🎤',
+      popular: artistPlanMode === 'free',
+    },
+    label: {
+      name: 'Label',
+      price: 20,
+      period: 'year',
+      description: 'For labels & managers',
+      features: [
+        'Everything in Artist',
+        'Multi-artist management',
+        'Advanced analytics',
+        'Priority support',
+        '24h release',
+      ],
+      icon: '🏢',
+      popular: artistPlanMode !== 'free',
+    },
+  } as const
 }
 
 export default function SignupPage() {
   const [step, setStep] = useState<Step>('plan')
   const [freeTrial, setFreeTrial] = useState(false)
+  const [artistPlanMode, setArtistPlanMode] = useState<'free' | 'paid'>('free')
   const [formData, setFormData] = useState<FormData>({
     plan: null,
     name: '',
@@ -80,6 +84,7 @@ export default function SignupPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [trialEnabled, setTrialEnabled] = useState(true)
+  const plans = getPlans(artistPlanMode)
 
   // Fetch trial setting on mount
   useEffect(() => {
@@ -87,10 +92,12 @@ export default function SignupPage() {
       .then(res => res.json())
       .then(data => {
         setTrialEnabled(data.trialEnabled ?? true)
+        setArtistPlanMode(data.artistPlanMode === 'paid' ? 'paid' : 'free')
       })
       .catch(() => {
         // Default to enabled on error
         setTrialEnabled(true)
+        setArtistPlanMode('free')
       })
   }, [])
 
@@ -116,7 +123,47 @@ export default function SignupPage() {
     if (formData.plan) setStep('details')
   }
 
+  const completeFreeArtistSignup = async () => {
+    setIsLoading(true)
+    setError(null)
+    try {
+      const res = await fetch('/api/register-free-artist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          plan: 'artist',
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          country: formData.country,
+          artistName: formData.artistName,
+          socialLinks: formData.socialLinks,
+          spotifyLink: formData.spotifyLink,
+        }),
+      })
+
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        throw new Error(data.error || 'Registration failed')
+      }
+
+      const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://rdistro.net'
+      const txnId = data.txnId || `FREE-ARTIST-${Date.now()}`
+      window.location.href = `${baseUrl}/success?txn_id=${encodeURIComponent(txnId)}&free_artist=true`
+    } catch (err) {
+      console.error('Free artist signup error:', err)
+      setError(err instanceof Error ? err.message : 'Registration failed')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   const goToPayment = async () => {
+    if (formData.plan === 'artist' && artistPlanMode === 'free') {
+      await completeFreeArtistSignup()
+      return
+    }
+
     setIsLoading(true)
     setError(null)
     try {
@@ -558,7 +605,11 @@ export default function SignupPage() {
                       <div>
                         <p className="text-sm font-medium text-[var(--text)]">{formData.plan && plans[formData.plan].name}</p>
                         <p className="text-xs text-[var(--text-muted)]">
-                          {formData.freeTrial ? '$0 first month' : `$${formData.plan && plans[formData.plan].price}/yr`}
+                          {formData.freeTrial
+                            ? '$0 first month'
+                            : (formData.plan === 'artist' && artistPlanMode === 'free')
+                              ? 'Free • no credit card'
+                              : `$${formData.plan && plans[formData.plan].price}/yr`}
                         </p>
                       </div>
                     </div>

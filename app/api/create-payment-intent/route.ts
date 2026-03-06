@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { emailExists } from '@/lib/registrations'
+import { getDatabase } from '@/lib/mongodb'
 
 export async function POST(request: NextRequest) {
   try {
@@ -37,6 +38,28 @@ export async function POST(request: NextRequest) {
         { error: 'Invalid plan selected' },
         { status: 400 }
       )
+    }
+
+    // Guard: Artist plan might be temporarily free (no credit card required)
+    if (plan === 'artist') {
+      try {
+        const db = await getDatabase()
+        const settings = await db.collection('settings').findOne({ settingsId: 'app_settings' })
+        const artistPlanMode = settings?.artistPlanMode === 'paid' ? 'paid' : 'free'
+        if (artistPlanMode === 'free') {
+          return NextResponse.json(
+            { error: 'Artist plan is currently free. No payment is required.' },
+            { status: 400 }
+          )
+        }
+      } catch (settingsError) {
+        // If settings lookup fails, default to free to avoid charging unexpectedly.
+        console.error('Settings lookup error (artist plan mode):', settingsError)
+        return NextResponse.json(
+          { error: 'Artist plan is currently free. No payment is required.' },
+          { status: 400 }
+        )
+      }
     }
 
     // Check for duplicate registration
