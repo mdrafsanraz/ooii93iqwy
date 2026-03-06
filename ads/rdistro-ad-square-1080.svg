@@ -1,0 +1,44 @@
+<svg width="1080" height="1080" viewBox="0 0 1080 1080" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1080" y2="1080" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0B0B0B" />
+      <stop offset="1" stop-color="#1F1F1F" />
+    </linearGradient>
+    <linearGradient id="accent" x1="140" y1="760" x2="940" y2="760" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF" />
+      <stop offset="1" stop-color="#BFBFBF" />
+    </linearGradient>
+  </defs>
+
+  <rect width="1080" height="1080" fill="url(#bg)" />
+  <rect x="60" y="60" width="960" height="960" rx="36" stroke="#2A2A2A" stroke-width="2" />
+
+  <!-- Logo mark -->
+  <g transform="translate(140,150)">
+    <rect x="0" y="48" width="12" height="58" rx="6" fill="#FFFFFF"/>
+    <rect x="22" y="34" width="12" height="86" rx="6" fill="#EDEDED"/>
+    <rect x="44" y="18" width="12" height="118" rx="6" fill="#D9D9D9"/>
+    <rect x="66" y="40" width="12" height="76" rx="6" fill="#EDEDED"/>
+    <rect x="88" y="26" width="12" height="102" rx="6" fill="#FFFFFF"/>
+  </g>
+
+  <!-- Brand -->
+  <text x="280" y="258" fill="#FFFFFF" font-family="Arial, Helvetica, sans-serif" font-size="88" font-weight="700" letter-spacing="2">RDISTRO</text>
+  <text x="282" y="302" fill="#BDBDBD" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="400" letter-spacing="5">MUSIC DISTRIBUTION</text>
+
+  <!-- Headline -->
+  <text x="140" y="440" fill="#FFFFFF" font-family="Arial, Helvetica, sans-serif" font-size="96" font-weight="700">Release</text>
+  <text x="140" y="540" fill="#FFFFFF" font-family="Arial, Helvetica, sans-serif" font-size="96" font-weight="700">Your Music</text>
+  <text x="140" y="640" fill="#FFFFFF" font-family="Arial, Helvetica, sans-serif" font-size="96" font-weight="700">Worldwide</text>
+
+  <!-- Subline -->
+  <text x="140" y="718" fill="#CFCFCF" font-family="Arial, Helvetica, sans-serif" font-size="40" font-weight="500">150+ platforms • Fast delivery • Artist & Label plans</text>
+
+  <!-- CTA -->
+  <rect x="140" y="760" width="800" height="110" rx="18" fill="url(#accent)" />
+  <text x="540" y="830" text-anchor="middle" fill="#111111" font-family="Arial, Helvetica, sans-serif" font-size="44" font-weight="700">Start at RDISTRO.NET</text>
+
+  <!-- Footer -->
+  <text x="140" y="940" fill="#8F8F8F" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="400">Built for independent artists, labels, and managers.</text>
+</svg>
+
