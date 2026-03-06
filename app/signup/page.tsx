@@ -205,19 +205,37 @@ export default function SignupPage() {
   }
 
   const isDetailsValid = () => {
-    const { name, email, phone, country } = formData
-    const baseValid = name && email && phone && country
+    const { name, email, phone, country, socialLinks, spotifyLink } = formData
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(email)) return false
+
+    const hasBasic = name && email && phone && country
+
+    const isValidUrl = (value: string) => {
+      if (!value) return true
+      try {
+        // Will throw for invalid URLs
+        new URL(value)
+        return true
+      } catch {
+        return false
+      }
+    }
+
+    if (!isValidUrl(socialLinks)) return false
+    if (!isValidUrl(spotifyLink)) return false
 
     if (formData.plan === 'artist') {
-      return baseValid && formData.artistName
+      return hasBasic && formData.artistName
     }
     
     if (formData.plan === 'label') {
       // If free trial, social links AND spotify link are required
       if (formData.freeTrial) {
-        return baseValid && formData.labelName && formData.socialLinks && formData.spotifyLink
+        return hasBasic && formData.labelName && formData.socialLinks && formData.spotifyLink
       }
-      return baseValid && formData.labelName
+      return hasBasic && formData.labelName
     }
     
     return false

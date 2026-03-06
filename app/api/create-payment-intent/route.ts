@@ -40,6 +40,38 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(email)) {
+      return NextResponse.json(
+        { error: 'Invalid email address' },
+        { status: 400 }
+      )
+    }
+
+    const isValidUrl = (value?: string) => {
+      if (!value) return true
+      try {
+        new URL(value)
+        return true
+      } catch {
+        return false
+      }
+    }
+
+    if (!isValidUrl(socialLinks)) {
+      return NextResponse.json(
+        { error: 'Invalid social links URL' },
+        { status: 400 }
+      )
+    }
+
+    if (!isValidUrl(spotifyLink)) {
+      return NextResponse.json(
+        { error: 'Invalid Spotify / music link URL' },
+        { status: 400 }
+      )
+    }
+
     // Guard: Artist plan might be temporarily free (no credit card required)
     if (plan === 'artist') {
       try {

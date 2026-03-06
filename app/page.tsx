@@ -1,11 +1,13 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 
 export default function HomePage() {
+  const [artistPlanMode, setArtistPlanMode] = useState<'free' | 'paid'>('free')
+
   useEffect(() => {
     // Smooth scrolling for anchor links
     const handleAnchorClick = (e: MouseEvent) => {
@@ -51,6 +53,18 @@ export default function HomePage() {
     }
 
     return () => clearInterval(interval)
+  }, [])
+
+  // Fetch current artist plan mode for pricing display
+  useEffect(() => {
+    fetch('/api/admin/settings')
+      .then(res => res.json())
+      .then(data => {
+        setArtistPlanMode(data.artistPlanMode === 'paid' ? 'paid' : 'free')
+      })
+      .catch(() => {
+        setArtistPlanMode('free')
+      })
   }, [])
 
   return (
@@ -171,7 +185,9 @@ export default function HomePage() {
           
           <p className="animate-slide-up-delay-2 text-lg md:text-xl text-gray-600 mb-10 leading-relaxed">
             Get your music on Spotify, Apple Music, and 150+ streaming platforms. 
-            Keep 100% of your rights and royalties.
+            {artistPlanMode === 'free'
+              ? ' Keep your rights and up to 80% of your royalties on our FREE Artist plan.'
+              : ' Keep 100% of your rights and royalties.'}
           </p>
           
           <div className="animate-slide-up-delay-3 flex flex-col sm:flex-row gap-4 justify-center items-center">
@@ -264,7 +280,9 @@ export default function HomePage() {
             {[
               { step: 1, title: 'Upload your music', desc: 'Upload your tracks, add artwork, and fill in your release information through our simple interface.' },
               { step: 2, title: 'We distribute everywhere', desc: 'We deliver your music to Spotify, Apple Music, Amazon, and 150+ other streaming platforms worldwide.' },
-              { step: 3, title: 'Collect your royalties', desc: 'Track performance, monitor streams, and collect 100% of your royalties through our analytics dashboard.' },
+              { step: 3, title: 'Collect your royalties', desc: artistPlanMode === 'free'
+                  ? 'Track performance, monitor streams, and collect up to 80% of your royalties through our analytics dashboard.'
+                  : 'Track performance, monitor streams, and collect 100% of your royalties through our analytics dashboard.' },
             ].map((item, i) => (
               <div key={i} className="text-center hover:-translate-y-2 transition-transform">
                 <div className="w-16 h-16 bg-black text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-6 hover:scale-110 hover:shadow-xl transition-all">
@@ -291,11 +309,25 @@ export default function HomePage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-3xl mx-auto">
             {/* Artist Plan */}
             <div className="bg-white/90 backdrop-blur-sm border border-gray-200/80 rounded-xl p-8 text-center hover:border-black hover:shadow-xl hover:-translate-y-2 transition-all duration-300">
-              <h3 className="text-lg font-semibold text-black mb-4">🎤 Artist</h3>
-              <div className="text-5xl font-bold text-black mb-2">$5</div>
-              <div className="text-gray-600 mb-6">per year</div>
+              <h3 className="text-lg font-semibold text-black mb-1">🎤 Artist</h3>
+              <p className="text-xs font-medium text-green-600 mb-3">
+                {artistPlanMode === 'free' ? 'FREE • 80% royalties • No credit card' : 'Paid plan • 100% royalties'}
+              </p>
+              <div className="text-5xl font-bold text-black mb-2">
+                {artistPlanMode === 'free' ? '$0' : '$5'}
+              </div>
+              <div className="text-gray-600 mb-6">
+                {artistPlanMode === 'free' ? 'for Artist plan' : 'per year'}
+              </div>
               <ul className="text-left space-y-3 mb-8">
-                {['1 Artist', 'Unlimited releases', '450+ streaming platforms', 'Keep 100% royalties', 'Basic analytics', 'Release in 48 hours'].map((feature, i) => (
+                {[
+                  '1 Artist',
+                  'Unlimited releases',
+                  '450+ streaming platforms',
+                  artistPlanMode === 'free' ? 'Keep 80% royalties' : 'Keep 100% royalties',
+                  'Basic analytics',
+                  'Release in 48 hours',
+                ].map((feature, i) => (
                   <li key={i} className="flex items-center gap-2 text-gray-600 hover:text-black hover:translate-x-1 transition-all">
                     <span className="text-green-500 font-bold">✓</span> {feature}
                   </li>
