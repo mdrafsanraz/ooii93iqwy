@@ -54,6 +54,14 @@ function sanitizeErrorMessage(value: unknown): string {
   return JSON.stringify(value).slice(0, 300)
 }
 
+function formatBrowserFallbackError(value: unknown): string {
+  const raw = sanitizeErrorMessage(value)
+  if (raw.includes('Executable doesn\'t exist') || raw.includes('Please run the following command')) {
+    return 'Browser fallback unavailable: Chromium binary missing on deployment. Configure PLAYWRIGHT_BROWSERS_PATH=0 and install browsers during build (playwright install chromium).'
+  }
+  return `Browser fallback error: ${raw}`
+}
+
 function isCloudflareHtmlChallenge(status: number, contentType: string | null, body: string): boolean {
   if (status !== 403) return false
   const bodyLower = body.toLowerCase()
@@ -82,6 +90,7 @@ async function syncInviteViaBrowser(payload: { email: string; type: 'artist' | '
     const browser = await chromium.launch({
       headless: true,
       args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH || undefined,
     })
     const context = await browser.newContext()
     const page = await context.newPage()
@@ -177,7 +186,7 @@ async function syncInviteViaBrowser(payload: { email: string; type: 'artist' | '
   } catch (error) {
     return {
       ok: false,
-      message: `Browser fallback error: ${sanitizeErrorMessage(error)}`,
+      message: formatBrowserFallbackError(error),
       cloudflareBlocked: false,
     }
   }
