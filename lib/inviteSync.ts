@@ -57,7 +57,7 @@ function sanitizeErrorMessage(value: unknown): string {
 function formatBrowserFallbackError(value: unknown): string {
   const raw = sanitizeErrorMessage(value)
   if (raw.includes('Executable doesn\'t exist') || raw.includes('Please run the following command')) {
-    return 'Browser fallback unavailable: Chromium binary missing on deployment. Configure PLAYWRIGHT_BROWSERS_PATH=0 and install browsers during build (playwright install chromium).'
+    return 'Browser fallback unavailable: Chromium binary is missing in runtime.'
   }
   return `Browser fallback error: ${raw}`
 }
@@ -86,19 +86,46 @@ async function syncInviteViaBrowser(payload: { email: string; type: 'artist' | '
   }
 
   try {
-    const { chromium } = await import('playwright')
-    const browser = await chromium.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
-      executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH || undefined,
-    })
+    const isVercelRuntime = Boolean(process.env.VERCEL)
+
+    let browser: { newContext: () => Promise<{ newPage: () => Promise<any> }>; close: () => Promise<void> }
+    if (isVercelRuntime) {
+      const [{ chromium: playwrightChromium }, chromiumRuntime] = await Promise.all([
+        import('playwright'),
+        import('@sparticuz/chromium'),
+      ])
+      const chromium = chromiumRuntime.default
+      const executablePath = await chromium.executablePath()
+
+      browser = await playwrightChromium.launch({
+        args: chromium.args,
+        executablePath,
+        headless: true,
+      })
+    } else {
+      const { chromium } = await import('playwright')
+      browser = await chromium.launch({
+        headless: true,
+        args: ['--no-sandbox', '--disable-setuid-sandbox'],
+        executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH || undefined,
+      })
+    }
+
     const context = await browser.newContext()
     const page = await context.newPage()
 
     await page.goto(getAdminBaseUrl(), { waitUntil: 'domcontentloaded', timeout: 45000 })
 
+    type InviteEvalPayload = {
+      loginApiUrl: string
+      inviteApiUrl: string
+      email: string
+      password: string
+      invitePayload: { email: string; type: 'artist' | 'label' }
+    }
+
     const result = await page.evaluate(
-      async ({ loginApiUrl, inviteApiUrl, email, password, invitePayload }) => {
+      async ({ loginApiUrl, inviteApiUrl, email, password, invitePayload }: InviteEvalPayload) => {
         const parseTokenFromJson = (data: unknown): string => {
           if (!data || typeof data !== 'object') return ''
           const asRecord = data as Record<string, unknown>
