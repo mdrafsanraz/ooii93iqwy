@@ -13,6 +13,12 @@ type SyncInviteParams = {
   force?: boolean
 }
 
+type InviteAttemptResult = {
+  ok: boolean
+  message: string
+  cloudflareBlocked: boolean
+}
+
 function getInviteApiUrl(): string {
   return process.env.ADMIN_INVITE_API_URL || DEFAULT_INVITE_API_URL
 }
@@ -59,7 +65,7 @@ function isCloudflareHtmlChallenge(status: number, contentType: string | null, b
   )
 }
 
-async function syncInviteViaBrowser(payload: { email: string; type: 'artist' | 'label' }): Promise<{ ok: boolean; message: string }> {
+async function syncInviteViaBrowser(payload: { email: string; type: 'artist' | 'label' }): Promise<InviteAttemptResult> {
   const botEmail = getAdminBotEmail()
   const botPassword = getAdminBotPassword()
 
@@ -67,6 +73,7 @@ async function syncInviteViaBrowser(payload: { email: string; type: 'artist' | '
     return {
       ok: false,
       message: 'Browser fallback unavailable: ADMIN_BOT_EMAIL/ADMIN_BOT_PASSWORD missing',
+      cloudflareBlocked: false,
     }
   }
 
@@ -110,6 +117,7 @@ async function syncInviteViaBrowser(payload: { email: string; type: 'artist' | '
           return {
             ok: false,
             message: `Browser login failed (${loginRes.status}): ${loginText.slice(0, 200)}`,
+            cloudflareBlocked: false,
           }
         }
 
@@ -130,6 +138,7 @@ async function syncInviteViaBrowser(payload: { email: string; type: 'artist' | '
           return {
             ok: false,
             message: 'Browser login succeeded but token not found in response',
+            cloudflareBlocked: false,
           }
         }
 
@@ -148,10 +157,11 @@ async function syncInviteViaBrowser(payload: { email: string; type: 'artist' | '
           return {
             ok: false,
             message: `Browser invite failed (${inviteRes.status}): ${inviteText.slice(0, 200)}`,
+            cloudflareBlocked: false,
           }
         }
 
-        return { ok: true, message: 'Invite synced successfully (browser fallback)' }
+        return { ok: true, message: 'Invite synced successfully (browser fallback)', cloudflareBlocked: false }
       },
       {
         loginApiUrl: getAdminLoginApiUrl(),
@@ -168,6 +178,7 @@ async function syncInviteViaBrowser(payload: { email: string; type: 'artist' | '
     return {
       ok: false,
       message: `Browser fallback error: ${sanitizeErrorMessage(error)}`,
+      cloudflareBlocked: false,
     }
   }
 }
@@ -210,7 +221,7 @@ export async function syncInviteForRegistration({
 
   try {
     const token = getInviteToken()
-    let directApiResult: { ok: boolean; message: string; cloudflareBlocked: boolean } = {
+    let directApiResult: InviteAttemptResult = {
       ok: false,
       message: 'Direct API call skipped: ADMIN_API_TOKEN not configured',
       cloudflareBlocked: false,
@@ -242,7 +253,7 @@ export async function syncInviteForRegistration({
       }
     }
 
-    let finalResult = directApiResult
+    let finalResult: InviteAttemptResult = directApiResult
     if (!directApiResult.ok && (directApiResult.cloudflareBlocked || !token)) {
       const browserResult = await syncInviteViaBrowser(payload)
       if (browserResult.ok) {
