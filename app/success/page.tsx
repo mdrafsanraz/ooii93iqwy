@@ -26,6 +26,11 @@ function SuccessContent() {
         'transaction_id': txnId
       })
     }
+
+    // Meta Pixel complete registration tracking
+    if (typeof window !== 'undefined' && typeof (window as any).fbq === 'function') {
+      ;(window as any).fbq('track', 'CompleteRegistration')
+    }
     
     return () => clearTimeout(timer)
   }, [transactionId])

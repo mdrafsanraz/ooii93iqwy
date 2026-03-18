@@ -26,6 +26,12 @@ export interface Registration {
   subscriptionStatus?: 'trialing' | 'active' | 'past_due' | 'cancelled'
   lastPaymentDate?: string
   lastPaymentAmount?: number
+  // External invite sync tracking (admin.rdistro.net)
+  inviteSyncStatus?: 'pending' | 'sent' | 'failed'
+  inviteSyncedAt?: string | null
+  inviteLastAttemptAt?: string | null
+  inviteError?: string | null
+  inviteAttempts?: number
 }
 
 const COLLECTION = 'registrations'
@@ -44,6 +50,11 @@ export async function addRegistration(data: Omit<Registration, 'id' | 'createdAt
       id: `reg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       createdAt: new Date().toISOString(),
       accountCreated: false,
+      inviteSyncStatus: 'pending',
+      inviteSyncedAt: null,
+      inviteLastAttemptAt: null,
+      inviteError: null,
+      inviteAttempts: 0,
     }
     
     await collection.insertOne(registration)

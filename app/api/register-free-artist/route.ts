@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Resend } from 'resend'
 import { addRegistration, emailExists } from '@/lib/registrations'
+import { syncInviteForRegistration } from '@/lib/inviteSync'
 
 function generateTxnId() {
   return `FREE-ARTIST-${Date.now()}-${Math.random().toString(36).substring(2, 10)}`
@@ -82,7 +83,7 @@ export async function POST(request: NextRequest) {
     const txnId = generateTxnId()
 
     // Save registration (this is the primary capture for free Artist signups)
-    await addRegistration({
+    const registration = await addRegistration({
       plan: 'artist',
       name,
       email,
@@ -97,6 +98,13 @@ export async function POST(request: NextRequest) {
       freeTrial: false,
       trialEndDate: null,
       paymentStatus: 'succeeded',
+    })
+
+    // Auto-sync invite to external admin dashboard (best effort)
+    const inviteSync = await syncInviteForRegistration({
+      registrationId: registration.id,
+      email: registration.email,
+      plan: registration.plan,
     })
 
     // Best-effort emails (do not fail the request if email isn't configured)
@@ -153,7 +161,12 @@ export async function POST(request: NextRequest) {
       console.log('Email not configured (RESEND_API_KEY/ADMIN_EMAIL missing). Skipping free artist emails.')
     }
 
-    return NextResponse.json({ success: true, txnId })
+    return NextResponse.json({
+      success: true,
+      txnId,
+      inviteSynced: inviteSync.ok,
+      inviteMessage: inviteSync.message,
+    })
   } catch (error) {
     console.error('Free artist registration error:', error)
     const message = error instanceof Error ? error.message : 'Unknown error'

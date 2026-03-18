@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { Resend } from 'resend'
 import { getDatabase } from '@/lib/mongodb'
+import { syncInviteForRegistration } from '@/lib/inviteSync'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
   apiVersion: '2023-10-16',
@@ -511,6 +512,17 @@ async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent)
         },
       }
     )
+
+    if (existingRegistration.inviteSyncStatus !== 'sent') {
+      const inviteSync = await syncInviteForRegistration({
+        registrationId: existingRegistration.id,
+        email: existingRegistration.email,
+        plan: existingRegistration.plan,
+      })
+      if (!inviteSync.ok) {
+        console.error('Invite sync retry failed for existing payment registration:', existingRegistration.email, inviteSync.message)
+      }
+    }
     return
   }
 
@@ -535,10 +547,24 @@ async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent)
         id: `reg_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
         createdAt: new Date().toISOString(),
         accountCreated: false,
+        inviteSyncStatus: 'pending' as const,
+        inviteSyncedAt: null,
+        inviteLastAttemptAt: null,
+        inviteError: null,
+        inviteAttempts: 0,
       }
 
       await db.collection('registrations').insertOne(registration)
       console.log('Registration created from webhook for:', metadata.email)
+
+      const inviteSync = await syncInviteForRegistration({
+        registrationId: registration.id,
+        email: registration.email,
+        plan: registration.plan,
+      })
+      if (!inviteSync.ok) {
+        console.error('Invite sync failed for webhook registration:', registration.email, inviteSync.message)
+      }
 
       // Send notification emails
       await sendRegistrationEmails(registration, false)
@@ -595,6 +621,17 @@ async function handleSetupIntentSucceeded(setupIntent: Stripe.SetupIntent) {
         },
       }
     )
+
+    if (existingRegistration.inviteSyncStatus !== 'sent') {
+      const inviteSync = await syncInviteForRegistration({
+        registrationId: existingRegistration.id,
+        email: existingRegistration.email,
+        plan: existingRegistration.plan,
+      })
+      if (!inviteSync.ok) {
+        console.error('Invite sync retry failed for existing setup registration:', existingRegistration.email, inviteSync.message)
+      }
+    }
     return
   }
 
@@ -623,10 +660,24 @@ async function handleSetupIntentSucceeded(setupIntent: Stripe.SetupIntent) {
         id: `reg_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
         createdAt: new Date().toISOString(),
         accountCreated: false,
+        inviteSyncStatus: 'pending' as const,
+        inviteSyncedAt: null,
+        inviteLastAttemptAt: null,
+        inviteError: null,
+        inviteAttempts: 0,
       }
 
       await db.collection('registrations').insertOne(registration)
       console.log('Registration created from webhook (trial) for:', metadata.email)
+
+      const inviteSync = await syncInviteForRegistration({
+        registrationId: registration.id,
+        email: registration.email,
+        plan: registration.plan,
+      })
+      if (!inviteSync.ok) {
+        console.error('Invite sync failed for trial webhook registration:', registration.email, inviteSync.message)
+      }
 
       // Send notification emails
       await sendRegistrationEmails(registration, true)

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getRegistrations, getStats, updateRegistration, deleteRegistration, getRegistrationById } from '@/lib/registrations'
 import Stripe from 'stripe'
+import { syncInviteForRegistration } from '@/lib/inviteSync'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
   apiVersion: '2023-10-16',
@@ -127,6 +128,27 @@ export async function PUT(request: NextRequest) {
         console.error('Stripe cancellation error:', stripeError)
         return NextResponse.json({ error: 'Failed to cancel subscription' }, { status: 500 })
       }
+    }
+
+    if (action === 'retry_invite') {
+      const registration = await getRegistrationById(id)
+
+      if (!registration) {
+        return NextResponse.json({ error: 'Registration not found' }, { status: 404 })
+      }
+
+      const inviteSync = await syncInviteForRegistration({
+        registrationId: registration.id,
+        email: registration.email,
+        plan: registration.plan,
+        force: true,
+      })
+
+      if (!inviteSync.ok) {
+        return NextResponse.json({ error: inviteSync.message }, { status: 500 })
+      }
+
+      return NextResponse.json({ success: true, message: inviteSync.message })
     }
     
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
