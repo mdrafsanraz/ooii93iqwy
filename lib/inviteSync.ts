@@ -5,6 +5,8 @@ export type InviteSyncStatus = 'pending' | 'sent' | 'failed'
 
 const DEFAULT_INVITE_API_URL = 'https://admin.rdistro.net/api/users/invite'
 const DEFAULT_ADMIN_BASE_URL = 'https://admin.rdistro.net'
+const DEFAULT_CHROMIUM_PACK_URL =
+  'https://github.com/Sparticuz/chromium/releases/download/v138.0.2/chromium-v138.0.2-pack.tar'
 
 type SyncInviteParams = {
   registrationId: string
@@ -95,7 +97,13 @@ async function syncInviteViaBrowser(payload: { email: string; type: 'artist' | '
         import('@sparticuz/chromium'),
       ])
       const chromium = chromiumRuntime.default
-      const executablePath = await chromium.executablePath()
+      let executablePath: string
+      try {
+        executablePath = await chromium.executablePath()
+      } catch {
+        const packUrl = process.env.CHROMIUM_PACK_URL || DEFAULT_CHROMIUM_PACK_URL
+        executablePath = await chromium.executablePath(packUrl)
+      }
 
       browser = await playwrightChromium.launch({
         args: chromium.args,
