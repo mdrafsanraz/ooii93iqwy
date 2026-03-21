@@ -209,30 +209,6 @@ export default function AdminPage() {
     }
   }
 
-  const retryInvite = async (id: string) => {
-    try {
-      const res = await fetch('/api/admin/registrations', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Basic ${btoa(`admin:${password}`)}`,
-        },
-        body: JSON.stringify({ id, action: 'retry_invite' }),
-      })
-
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}))
-        setError(data.error || 'Retry invite failed')
-        return
-      }
-
-      await fetchData()
-      setSelectedRegistration(null)
-    } catch {
-      setError('Retry invite failed')
-    }
-  }
-
   const rejectRegistration = async (id: string) => {
     if (!confirm('Reject this registration? This will send a rejection email and permanently delete the registration.')) {
       return
@@ -421,7 +397,6 @@ export default function AdminPage() {
   const labelCount = registrations.filter(r => r.plan === 'label').length
   const pendingCount = registrations.filter(r => !r.accountCreated).length
   const doneCount = registrations.filter(r => r.accountCreated).length
-  const inviteFailedCount = registrations.filter(r => r.inviteSyncStatus === 'failed').length
 
   const getTrialDateColor = (trialEndDate: string) => {
     const now = new Date()
@@ -488,13 +463,6 @@ export default function AdminPage() {
             </div>
           ))}
         </div>
-        {inviteFailedCount > 0 && (
-          <div className="mb-4 p-3 bg-warning/10 border border-warning/20 rounded-lg text-xs text-warning">
-            ⚠️ {inviteFailedCount} invite{inviteFailedCount > 1 ? 's' : ''} failed to sync. Open a registration and click
-            {' '}<span className="font-semibold">Retry Invite</span> or create it manually.
-          </div>
-        )}
-
         {/* Settings */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
           <div className="card p-3 sm:p-4">
@@ -706,15 +674,6 @@ export default function AdminPage() {
                         <span className={`badge text-[10px] ${reg.accountCreated ? 'badge-success' : 'badge-warning'}`}>
                           {reg.accountCreated ? '✓ Created' : '⏳ Pending'}
                         </span>
-                        {reg.inviteSyncStatus === 'sent' && (
-                          <span className="badge text-[10px] bg-success/10 text-success">📨 Invited</span>
-                        )}
-                        {reg.inviteSyncStatus === 'failed' && (
-                          <span className="badge text-[10px] bg-error/10 text-error">❌ Invite Failed</span>
-                        )}
-                        {(!reg.inviteSyncStatus || reg.inviteSyncStatus === 'pending') && !reg.accountCreated && (
-                          <span className="badge text-[10px] bg-warning/10 text-warning">⌛ Invite Pending</span>
-                        )}
                       </div>
                     </div>
                   </div>
@@ -776,27 +735,6 @@ export default function AdminPage() {
                 </div>
               </div>
 
-              <div className="p-2.5 rounded-lg border border-[var(--border)] bg-[var(--surface)]">
-                <p className="text-[10px] text-[var(--text-muted)] mb-1">External Invite Status</p>
-                {selectedRegistration.inviteSyncStatus === 'sent' && (
-                  <p className="text-xs text-success font-medium">✅ Invite synced</p>
-                )}
-                {selectedRegistration.inviteSyncStatus === 'failed' && (
-                  <p className="text-xs text-error font-medium">❌ Invite failed</p>
-                )}
-                {(!selectedRegistration.inviteSyncStatus || selectedRegistration.inviteSyncStatus === 'pending') && (
-                  <p className="text-xs text-warning font-medium">⌛ Invite pending</p>
-                )}
-                {selectedRegistration.inviteLastAttemptAt && (
-                  <p className="text-[10px] text-[var(--text-muted)] mt-1">
-                    Last attempt: {new Date(selectedRegistration.inviteLastAttemptAt).toLocaleString()}
-                  </p>
-                )}
-                {selectedRegistration.inviteError && (
-                  <p className="text-[10px] text-error mt-1 break-words">{selectedRegistration.inviteError}</p>
-                )}
-              </div>
-
               {selectedRegistration.socialLinks && (
                 <div>
                   <p className="text-[10px] text-[var(--text-muted)]">Social Links</p>
@@ -816,23 +754,13 @@ export default function AdminPage() {
 
             <div className="mt-4 pt-3 border-t border-[var(--border)] space-y-2">
               <div className="flex gap-2">
-                {!selectedRegistration.accountCreated && (
-                  <button onClick={() => markAccountCreated(selectedRegistration.id)} className="btn-primary flex-1 text-sm py-2">
-                    ✓ Mark Created
-                  </button>
-                )}
+                <button onClick={() => markAccountCreated(selectedRegistration.id)} className="btn-primary flex-1 text-sm py-2">
+                  ✓ Mark Created
+                </button>
                 <button onClick={() => setSelectedRegistration(null)} className="btn-secondary flex-1 text-sm py-2">
                   Close
                 </button>
               </div>
-              {selectedRegistration.inviteSyncStatus !== 'sent' && (
-                <button
-                  onClick={() => retryInvite(selectedRegistration.id)}
-                  className="w-full text-xs py-2 px-3 rounded-lg bg-primary/10 text-primary border border-primary/20"
-                >
-                  🔁 Retry Invite
-                </button>
-              )}
               
               {selectedRegistration.subscriptionId && selectedRegistration.subscriptionStatus !== 'cancelled' && (
                 <button onClick={() => cancelSubscription(selectedRegistration.id)} className="w-full text-xs py-2 px-3 rounded-lg bg-warning/10 text-warning border border-warning/20">
