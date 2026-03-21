@@ -719,22 +719,8 @@ async function sendRegistrationEmails(registration: any, isTrial: boolean) {
       `,
     })
 
-    // Send customer email (simplified version)
-    await resend.emails.send({
-      from: 'RDistro <registration@rdistro.net>',
-      to: registration.email,
-      subject: isTrial ? 'Your Free Trial Has Started - RDistro' : '🎉 Welcome to RDistro - Registration Successful!',
-      html: `
-        <div style="font-family: sans-serif; padding: 20px;">
-          <h2>Welcome to RDistro!</h2>
-          <p>Hi ${registration.name},</p>
-          <p>${isTrial ? 'Your free trial has started. Your account will be set up within 24-48 hours.' : 'Thank you for your registration. Your account will be set up within 24-48 hours.'}</p>
-          <p>Best regards,<br>The RDistro Team</p>
-        </div>
-      `,
-    })
-
-    console.log('Registration emails sent for:', registration.email)
+    // Customer acceptance email is sent only on admin "Mark Created"
+    console.log('Registration admin notification sent for:', registration.email)
   } catch (error) {
     console.error('Error sending registration emails:', error)
   }

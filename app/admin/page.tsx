@@ -233,6 +233,34 @@ export default function AdminPage() {
     }
   }
 
+  const rejectRegistration = async (id: string) => {
+    if (!confirm('Reject this registration? This will send a rejection email and permanently delete the registration.')) {
+      return
+    }
+
+    try {
+      const res = await fetch('/api/admin/registrations', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Basic ${btoa(`admin:${password}`)}`,
+        },
+        body: JSON.stringify({ id, action: 'reject_registration' }),
+      })
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        setError(data.error || 'Reject failed')
+        return
+      }
+
+      await fetchData()
+      setSelectedRegistration(null)
+    } catch {
+      setError('Reject failed')
+    }
+  }
+
   const fetchSettings = useCallback(async () => {
     try {
       const res = await fetch('/api/admin/settings')
@@ -814,6 +842,12 @@ export default function AdminPage() {
               
               <div className="pt-2 border-t border-[var(--border)]">
                 <p className="text-[10px] text-[var(--text-muted)] mb-2">Danger Zone</p>
+                <button
+                  onClick={() => rejectRegistration(selectedRegistration.id)}
+                  className="w-full mb-2 text-xs py-2 rounded-lg bg-error text-white"
+                >
+                  🚫 Reject (Email + Delete)
+                </button>
                 <div className="flex gap-2">
                   <button onClick={() => deleteRegistration(selectedRegistration.id, false)} className="flex-1 text-xs py-2 rounded-lg bg-error/10 text-error border border-error/20">
                     🗑️ Delete

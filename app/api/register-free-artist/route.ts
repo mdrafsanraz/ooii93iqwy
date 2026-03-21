@@ -137,23 +137,7 @@ export async function POST(request: NextRequest) {
           html: adminHtml,
         })
 
-        const customerHtml = `
-          <div style="font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Arial, sans-serif;">
-            <h2>Welcome to RDistro 🎵</h2>
-            <p>Hi <strong>${name}</strong>,</p>
-            <p>Your <strong>FREE Artist</strong> plan is confirmed.</p>
-            <p><strong>Royalties:</strong> 80%</p>
-            <p>We’ll start setting up your account and you’ll receive login details within <strong>24–48 hours</strong>.</p>
-            <p style="color:#6b7280;font-size:12px;">Transaction ID: ${txnId}</p>
-          </div>
-        `
-
-        await resend.emails.send({
-          from: 'RDistro <registration@rdistro.net>',
-          to: email,
-          subject: 'Your RDistro FREE Artist plan is confirmed',
-          html: customerHtml,
-        })
+        // Customer acceptance email is sent only on admin "Mark Created"
       } catch (emailError) {
         console.error('Free artist email error:', emailError)
       }
