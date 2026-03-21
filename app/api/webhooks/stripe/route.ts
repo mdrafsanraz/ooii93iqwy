@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { Resend } from 'resend'
 import { getDatabase } from '@/lib/mongodb'
-import { syncInviteForRegistration } from '@/lib/inviteSync'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
   apiVersion: '2023-10-16',
@@ -513,16 +512,6 @@ async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent)
       }
     )
 
-    if (existingRegistration.inviteSyncStatus !== 'sent') {
-      const inviteSync = await syncInviteForRegistration({
-        registrationId: existingRegistration.id,
-        email: existingRegistration.email,
-        plan: existingRegistration.plan,
-      })
-      if (!inviteSync.ok) {
-        console.error('Invite sync retry failed for existing payment registration:', existingRegistration.email, inviteSync.message)
-      }
-    }
     return
   }
 
@@ -556,15 +545,6 @@ async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent)
 
       await db.collection('registrations').insertOne(registration)
       console.log('Registration created from webhook for:', metadata.email)
-
-      const inviteSync = await syncInviteForRegistration({
-        registrationId: registration.id,
-        email: registration.email,
-        plan: registration.plan,
-      })
-      if (!inviteSync.ok) {
-        console.error('Invite sync failed for webhook registration:', registration.email, inviteSync.message)
-      }
 
       // Send notification emails
       await sendRegistrationEmails(registration, false)
@@ -622,16 +602,6 @@ async function handleSetupIntentSucceeded(setupIntent: Stripe.SetupIntent) {
       }
     )
 
-    if (existingRegistration.inviteSyncStatus !== 'sent') {
-      const inviteSync = await syncInviteForRegistration({
-        registrationId: existingRegistration.id,
-        email: existingRegistration.email,
-        plan: existingRegistration.plan,
-      })
-      if (!inviteSync.ok) {
-        console.error('Invite sync retry failed for existing setup registration:', existingRegistration.email, inviteSync.message)
-      }
-    }
     return
   }
 
@@ -670,15 +640,6 @@ async function handleSetupIntentSucceeded(setupIntent: Stripe.SetupIntent) {
       await db.collection('registrations').insertOne(registration)
       console.log('Registration created from webhook (trial) for:', metadata.email)
 
-      const inviteSync = await syncInviteForRegistration({
-        registrationId: registration.id,
-        email: registration.email,
-        plan: registration.plan,
-      })
-      if (!inviteSync.ok) {
-        console.error('Invite sync failed for trial webhook registration:', registration.email, inviteSync.message)
-      }
-
       // Send notification emails
       await sendRegistrationEmails(registration, true)
     } catch (error) {
@@ -691,7 +652,7 @@ async function handleSetupIntentSucceeded(setupIntent: Stripe.SetupIntent) {
 
 // Helper to send registration emails (extracted from send-notification route)
 async function sendRegistrationEmails(registration: any, isTrial: boolean) {
-  if (!process.env.RESEND_API_KEY || !process.env.ADMIN_EMAIL) {
+  if (!process.env.RESEND_API_KEY) {
     console.log('Email service not configured, skipping emails')
     return
   }
@@ -702,25 +663,39 @@ async function sendRegistrationEmails(registration: any, isTrial: boolean) {
     const entityName = registration.plan === 'artist' ? registration.artistName : registration.labelName
 
     // Send admin email (simplified version)
+    if (process.env.ADMIN_EMAIL) {
+      await resend.emails.send({
+        from: 'RDistro <registration@rdistro.net>',
+        to: process.env.ADMIN_EMAIL,
+        subject: `${isTrial ? '🎁 Free Trial' : '🎵'} New ${planName}: ${entityName} ${isTrial ? '(Trial)' : `($${registration.amount})`}`,
+        html: `
+          <div style="font-family: sans-serif; padding: 20px;">
+            <h2>New ${planName} Registration ${isTrial ? '(Free Trial)' : ''}</h2>
+            <p><strong>Name:</strong> ${registration.name}</p>
+            <p><strong>Email:</strong> ${registration.email}</p>
+            <p><strong>Plan:</strong> ${planName}</p>
+            <p><strong>Amount:</strong> $${registration.amount}</p>
+            <p><strong>Payment ID:</strong> ${registration.paymentIntentId}</p>
+            <p><a href="https://app.rdistro.com/admin">View in Admin Dashboard</a></p>
+          </div>
+        `,
+      })
+    }
+
     await resend.emails.send({
       from: 'RDistro <registration@rdistro.net>',
-      to: process.env.ADMIN_EMAIL,
-      subject: `${isTrial ? '🎁 Free Trial' : '🎵'} New ${planName}: ${entityName} ${isTrial ? '(Trial)' : `($${registration.amount})`}`,
+      to: registration.email,
+      subject: 'Your registration is in review — RDistro',
       html: `
-        <div style="font-family: sans-serif; padding: 20px;">
-          <h2>New ${planName} Registration ${isTrial ? '(Free Trial)' : ''}</h2>
-          <p><strong>Name:</strong> ${registration.name}</p>
-          <p><strong>Email:</strong> ${registration.email}</p>
-          <p><strong>Plan:</strong> ${planName}</p>
-          <p><strong>Amount:</strong> $${registration.amount}</p>
-          <p><strong>Payment ID:</strong> ${registration.paymentIntentId}</p>
-          <p><a href="https://app.rdistro.com/admin">View in Admin Dashboard</a></p>
+        <div style="font-family: sans-serif; padding: 20px; line-height: 1.6;">
+          <h2>Registration received</h2>
+          <p>Hi ${registration.name},</p>
+          <p>Your registration is now in review and you will receive an update shortly.</p>
+          <p>Please check your inbox and spam/junk folder for updates from RDistro.</p>
         </div>
       `,
     })
-
-    // Customer acceptance email is sent only on admin "Mark Created"
-    console.log('Registration admin notification sent for:', registration.email)
+    console.log('Registration review email sent for:', registration.email)
   } catch (error) {
     console.error('Error sending registration emails:', error)
   }
