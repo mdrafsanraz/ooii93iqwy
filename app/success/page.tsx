@@ -80,6 +80,9 @@ function SuccessContent() {
               ? 'Your free trial has been activated.' 
               : 'Thank you for subscribing to RDistro.'}
           </p>
+          <p className="text-base text-gray-600 max-w-xl mx-auto">
+            You will receive your platform invite within <strong className="text-gray-900">24 hours</strong>, provided your information is correct.
+          </p>
         </div>
 
         {/* Info Card */}
@@ -96,6 +99,7 @@ function SuccessContent() {
           <p className="text-gray-600 mb-6">
             We&apos;ve sent you a confirmation email with your account details and next steps. 
             Please check your inbox (and spam folder) for instructions on how to get started.
+            If your details are correct, your invite will arrive within 24 hours.
           </p>
 
           <div className="bg-gray-50 rounded-xl p-6 text-left">
@@ -103,7 +107,7 @@ function SuccessContent() {
             <ul className="space-y-3">
               <li className="flex items-start gap-3">
                 <span className="w-6 h-6 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-sm font-medium flex-shrink-0">1</span>
-                <span className="text-gray-600">Check your email for login credentials</span>
+                <span className="text-gray-600">Within 24 hours: check your email for your platform invite (if your information is correct)</span>
               </li>
               <li className="flex items-start gap-3">
                 <span className="w-6 h-6 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-sm font-medium flex-shrink-0">2</span>

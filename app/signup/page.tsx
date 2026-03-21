@@ -85,7 +85,9 @@ export default function SignupPage() {
   const [paymentType, setPaymentType] = useState<'payment' | 'setup'>('payment')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [trialEnabled, setTrialEnabled] = useState(true)
+  /** Avoid flashing trial UI: default false until settings load (API may disable trial). */
+  const [trialEnabled, setTrialEnabled] = useState(false)
+  const [settingsLoaded, setSettingsLoaded] = useState(false)
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({})
   const plans = getPlans(artistPlanMode)
 
@@ -101,6 +103,9 @@ export default function SignupPage() {
         // Default to enabled on error
         setTrialEnabled(true)
         setArtistPlanMode('free')
+      })
+      .finally(() => {
+        setSettingsLoaded(true)
       })
   }, [])
 
@@ -410,8 +415,8 @@ export default function SignupPage() {
                 >
                   <h2 className="text-lg font-bold text-[var(--text)] text-center mb-4">Choose Plan</h2>
 
-                  {/* Free Trial Toggle */}
-                  {trialEnabled && (
+                  {/* Free Trial Toggle — only after settings load so trial doesn’t flash when disabled */}
+                  {settingsLoaded && trialEnabled && (
                     <div className="mb-4 p-3 rounded-xl bg-gradient-to-r from-primary/10 to-secondary/10 border border-primary/20">
                       <label className="flex items-center justify-between cursor-pointer gap-3">
                         <div className="flex-1 min-w-0">
