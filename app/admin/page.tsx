@@ -52,6 +52,7 @@ export default function AdminPage() {
   const [paymentFilter, setPaymentFilter] = useState<'all' | 'paid' | 'trial'>('all')
   const [typeFilter, setTypeFilter] = useState<'all' | 'artist' | 'label'>('all')
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'done'>('all')
+  const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'yesterday'>('all')
   const [checkingAuth, setCheckingAuth] = useState(true)
   const [trialEnabled, setTrialEnabled] = useState(true)
   const [artistPlanMode, setArtistPlanMode] = useState<'free' | 'paid'>('free')
@@ -303,7 +304,20 @@ export default function AdminPage() {
   }
 
   const getFilteredRegistrations = () => {
+    const now = new Date()
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const startOfTomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)
+    const startOfYesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1)
+
     return registrations.filter(reg => {
+      const createdDate = new Date(reg.createdAt)
+
+      if (dateFilter === 'today' && !(createdDate >= startOfToday && createdDate < startOfTomorrow)) {
+        return false
+      }
+      if (dateFilter === 'yesterday' && !(createdDate >= startOfYesterday && createdDate < startOfToday)) {
+        return false
+      }
       if (paymentFilter === 'paid' && (reg.freeTrial || reg.paymentStatus !== 'succeeded')) return false
       if (paymentFilter === 'trial' && !reg.freeTrial) return false
       if (typeFilter === 'artist' && reg.plan !== 'artist') return false
@@ -591,6 +605,27 @@ export default function AdminPage() {
                   onClick={() => setStatusFilter(f.key as typeof statusFilter)}
                   className={`text-[10px] px-2 py-1 rounded-md transition-colors ${
                     statusFilter === f.key
+                      ? 'bg-primary text-white'
+                      : 'bg-[var(--surface-dark)] text-[var(--text-muted)] hover:bg-[var(--border)]'
+                  }`}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex items-center gap-1">
+              <span className="text-[10px] text-[var(--text-muted)] mr-1">Date:</span>
+              {[
+                { key: 'all', label: 'All' },
+                { key: 'today', label: 'Today' },
+                { key: 'yesterday', label: 'Yesterday' },
+              ].map((f) => (
+                <button
+                  key={f.key}
+                  onClick={() => setDateFilter(f.key as typeof dateFilter)}
+                  className={`text-[10px] px-2 py-1 rounded-md transition-colors ${
+                    dateFilter === f.key
                       ? 'bg-primary text-white'
                       : 'bg-[var(--surface-dark)] text-[var(--text-muted)] hover:bg-[var(--border)]'
                   }`}
