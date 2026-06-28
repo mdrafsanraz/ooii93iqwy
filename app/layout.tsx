@@ -337,7 +337,7 @@ export default function RootLayout({
       <body className="antialiased">
         {/* Google tag (gtag.js) */}
         <Script
-          src="https://www.googletagmanager.com/gtag/js?id=AW-17911221416"
+          src="https://www.googletagmanager.com/gtag/js?id=AW-18279892909"
           strategy="afterInteractive"
         />
         <Script id="google-analytics" strategy="afterInteractive">
