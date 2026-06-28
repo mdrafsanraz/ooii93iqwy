@@ -22,7 +22,7 @@ function SuccessContent() {
       const txnId = transactionId || fallbackId
       
       ;(window as any).gtag('event', 'conversion', {
-        'send_to': 'AW-17911221416/hDrjCPnr0e4bEKiZ3txC',
+        'send_to': 'AW-18279892909/rRGiCPiygcccEK2PxIxE',
         'transaction_id': txnId
       })
     }
