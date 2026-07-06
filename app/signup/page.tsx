@@ -102,6 +102,7 @@ export default function SignupPage() {
   /** Avoid flashing trial UI: default false until settings load (API may disable trial). */
   const [trialEnabled, setTrialEnabled] = useState(false)
   const [settingsLoaded, setSettingsLoaded] = useState(false)
+  const [plansLoaded, setPlansLoaded] = useState(false)
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({})
 
   // Fetch active plans + trial setting on mount
@@ -119,6 +120,7 @@ export default function SignupPage() {
       })
       .finally(() => {
         setSettingsLoaded(true)
+        setPlansLoaded(true)
       })
   }, [])
 
@@ -428,6 +430,13 @@ export default function SignupPage() {
                 >
                   <h2 className="text-lg font-bold text-[var(--text)] text-center mb-4">Choose Plan</h2>
 
+                  {!plansLoaded ? (
+                    <div className="grid grid-cols-2 gap-3 mb-4">
+                      <div className="h-48 rounded-xl bg-[var(--surface-dark)] animate-pulse" />
+                      <div className="h-48 rounded-xl bg-[var(--surface-dark)] animate-pulse" />
+                    </div>
+                  ) : (
+                  <>
                   {/* Free Trial Toggle — only after settings load so trial doesn’t flash when disabled */}
                   {settingsLoaded && trialEnabled && (
                     <div className="mb-4 p-3 rounded-xl bg-gradient-to-r from-primary/10 to-secondary/10 border border-primary/20">
@@ -494,6 +503,11 @@ export default function SignupPage() {
                                 <span className="text-xs text-[var(--text-muted)]"> first month</span>
                                 <p className="text-[10px] text-[var(--text-muted)]">then ${plan.price}/year</p>
                               </>
+                            ) : plan.price === 0 ? (
+                              <>
+                                <span className="text-2xl font-bold text-success">Free</span>
+                                <span className="text-xs text-[var(--text-muted)]"> /{plan.period}</span>
+                              </>
                             ) : (
                               <>
                                 <span className="text-2xl font-bold text-[var(--text)]">${plan.price}</span>
@@ -522,6 +536,8 @@ export default function SignupPage() {
                   >
                     Continue
                   </button>
+                  </>
+                  )}
                 </motion.div>
               )}
 
@@ -546,7 +562,9 @@ export default function SignupPage() {
                   {formData.freeTrial && (
                     <div className="mb-4 p-3 rounded-xl bg-success/10 border border-success/20">
                       <p className="text-sm font-medium text-success">🎁 1 Month Free Trial</p>
-                      <p className="text-[10px] text-success/80">Your card will be charged $20/year after 30 days</p>
+                      <p className="text-[10px] text-success/80">
+                        Your card will be charged ${plans.label.price}/year after 30 days
+                      </p>
                     </div>
                   )}
 
@@ -731,7 +749,9 @@ export default function SignupPage() {
                   {formData.freeTrial && (
                     <div className="mb-4 p-3 rounded-xl bg-success/10 border border-success/20">
                       <p className="text-sm font-medium text-success">🎁 1 Month Free Trial</p>
-                      <p className="text-[10px] text-success/80">You won&apos;t be charged today. Card will be charged $20 after 30 days.</p>
+                      <p className="text-[10px] text-success/80">
+                        You won&apos;t be charged today. Card will be charged ${plans.label.price} after 30 days.
+                      </p>
                     </div>
                   )}
 
@@ -771,7 +791,12 @@ export default function SignupPage() {
                       },
                     }}
                   >
-                    <CheckoutForm formData={formData} paymentType={paymentType} />
+                    <CheckoutForm
+                      formData={formData}
+                      paymentType={paymentType}
+                      artistPrice={plans.artist.price}
+                      labelPrice={plans.label.price}
+                    />
                   </Elements>
                 </motion.div>
               )}

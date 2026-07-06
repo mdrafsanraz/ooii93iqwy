@@ -19,9 +19,16 @@ interface FormData {
 interface CheckoutFormProps {
   formData: FormData
   paymentType?: 'payment' | 'setup'
+  artistPrice?: number
+  labelPrice?: number
 }
 
-export default function CheckoutForm({ formData, paymentType = 'payment' }: CheckoutFormProps) {
+export default function CheckoutForm({
+  formData,
+  paymentType = 'payment',
+  artistPrice = 5,
+  labelPrice = 20,
+}: CheckoutFormProps) {
   const stripe = useStripe()
   const elements = useElements()
   const [isProcessing, setIsProcessing] = useState(false)
@@ -101,6 +108,13 @@ export default function CheckoutForm({ formData, paymentType = 'payment' }: Chec
   }
 
   const sendNotification = async (paymentId?: string, amount?: number) => {
+    const planAmount =
+      formData.plan === 'artist'
+        ? artistPrice
+        : formData.plan === 'label'
+          ? labelPrice
+          : labelPrice
+
     try {
       const response = await fetch('/api/send-notification', {
         method: 'POST',
@@ -108,7 +122,7 @@ export default function CheckoutForm({ formData, paymentType = 'payment' }: Chec
         body: JSON.stringify({
           ...formData,
           paymentIntentId: paymentId || 'subscription',
-          amount: amount ?? (formData.freeTrial ? 0 : (formData.plan === 'artist' ? 5 : 20)),
+          amount: amount ?? (formData.freeTrial ? 0 : planAmount),
           freeTrial: formData.freeTrial,
           trialEndDate: formData.freeTrial 
             ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
@@ -134,13 +148,13 @@ export default function CheckoutForm({ formData, paymentType = 'payment' }: Chec
   const getButtonText = () => {
     if (isProcessing) return 'Processing...'
     if (formData.freeTrial) return '🎁 Start Free Trial'
-    if (formData.plan === 'artist') return '🔒 Pay $5/year'
-    return '🔒 Pay $20/year'
+    if (formData.plan === 'artist') return `🔒 Pay $${artistPrice}/year`
+    return `🔒 Pay $${labelPrice}/year`
   }
 
   const getSubText = () => {
     if (formData.freeTrial) {
-      return '🔒 Card saved securely • Auto-charges $20/year after 30 days'
+      return `🔒 Card saved securely • Auto-charges $${labelPrice}/year after 30 days`
     }
     if (formData.plan === 'artist') {
       return '🔒 Secured by Stripe • Auto-renews yearly'

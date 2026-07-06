@@ -21,9 +21,11 @@ interface WebsitePlan {
 export default function HomePage() {
   const [activePlans, setActivePlans] = useState<WebsitePlan[]>([])
   const [trialEnabled, setTrialEnabled] = useState(true)
+  const [plansLoaded, setPlansLoaded] = useState(false)
 
   const artistPlan = activePlans.find((p) => p.type === 'artist')
   const labelPlan = activePlans.find((p) => p.type === 'label')
+  const isFreeArtist = artistPlan && !artistPlan.requiresPayment
 
   useEffect(() => {
     // Smooth scrolling for anchor links
@@ -77,13 +79,16 @@ export default function HomePage() {
     fetch('/api/plans', { cache: 'no-store' })
       .then(res => res.json())
       .then(data => {
-        if (Array.isArray(data.plans)) {
+        if (Array.isArray(data.plans) && data.plans.length > 0) {
           setActivePlans(data.plans)
         }
         setTrialEnabled(data.trialEnabled ?? true)
       })
       .catch(() => {
         setTrialEnabled(true)
+      })
+      .finally(() => {
+        setPlansLoaded(true)
       })
   }, [])
 
@@ -215,7 +220,7 @@ export default function HomePage() {
               href="/signup" 
               className="bg-black text-white px-8 py-4 rounded-lg font-semibold hover:bg-gray-800 transition-all hover:-translate-y-0.5 hover:shadow-lg"
             >
-              Sign Up Free
+              {plansLoaded && isFreeArtist ? 'Sign Up Free' : 'Get Started'}
             </Link>
             <Link 
               href="#pricing" 
@@ -327,6 +332,13 @@ export default function HomePage() {
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-3xl mx-auto">
+            {!plansLoaded ? (
+              <>
+                <div className="h-96 rounded-xl bg-gray-100 animate-pulse" />
+                <div className="h-96 rounded-xl bg-gray-100 animate-pulse" />
+              </>
+            ) : (
+              <>
             {/* Artist Plan */}
             <div className="bg-white/90 backdrop-blur-sm border border-gray-200/80 rounded-xl p-8 text-center hover:border-black hover:shadow-xl hover:-translate-y-2 transition-all duration-300">
               <h3 className="text-lg font-semibold text-black mb-1">{artistPlan?.icon || '🎤'} {artistPlan?.name || 'Artist'}</h3>
@@ -398,6 +410,8 @@ export default function HomePage() {
                 Get Started
               </Link>
             </div>
+              </>
+            )}
           </div>
         </div>
       </section>
