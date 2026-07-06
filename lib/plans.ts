@@ -115,7 +115,7 @@ const PRESET_PLANS: PresetPlan[] = [
     period: 'year',
     description: 'For labels & managers',
     features: [
-      '100% royalties'
+      '100% royalties',
       'Everything in Artist',
       'Multi-artist management',
       'Advanced analytics',
@@ -137,7 +137,7 @@ const PRESET_PLANS: PresetPlan[] = [
     period: 'year',
     description: 'For labels & managers',
     features: [
-      '100% royalties'
+      '100% royalties',
       'Everything in Artist',
       'Multi-artist management',
       'Advanced analytics',
