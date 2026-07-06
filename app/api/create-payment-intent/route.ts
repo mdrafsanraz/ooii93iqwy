@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { emailExists } from '@/lib/registrations'
 import { getActivePlan } from '@/lib/plans'
-import { getOrCreateStripePriceForPlan } from '@/lib/stripePlans'
+import { requireStripePriceIdForPlan } from '@/lib/stripePlans'
 
 function hasValidLinks(value?: string) {
   if (!value || !value.trim()) return false
@@ -124,7 +124,7 @@ export async function POST(request: NextRequest) {
       // Continue with registration if DB check fails (to not block users)
     }
 
-    // Resolve Stripe price from the active plan (creates one if missing)
+    // Use manually configured Stripe Price ID from admin or env
     const activePlan = await getActivePlan(plan)
     const planAmount = activePlan?.price ?? (plan === 'artist' ? 5 : 20)
 
@@ -132,19 +132,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No active plan found for checkout' }, { status: 400 })
     }
 
-    let priceId: string | null = null
+    let priceId: string
     try {
-      priceId = await getOrCreateStripePriceForPlan(activePlan)
+      const resolved = requireStripePriceIdForPlan(activePlan)
+      priceId = resolved
     } catch (stripePlanError) {
+      const message =
+        stripePlanError instanceof Error ? stripePlanError.message : 'Stripe Price ID not configured'
       console.error('Stripe plan price error:', stripePlanError)
-      return NextResponse.json({ error: 'Payment system not configured' }, { status: 500 })
-    }
-
-    if (!priceId) {
-      return NextResponse.json(
-        { error: 'This plan does not require payment' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: message }, { status: 400 })
     }
 
     // Create a customer with full metadata

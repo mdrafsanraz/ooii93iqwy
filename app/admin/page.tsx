@@ -56,6 +56,7 @@ interface Plan {
   requiresPayment: boolean
   royaltyPercent: number
   sortOrder: number
+  stripePriceId?: string
 }
 
 function planPriceLabel(plan: Plan) {
@@ -81,6 +82,8 @@ export default function AdminPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [plans, setPlans] = useState<Plan[]>([])
   const [savingPlan, setSavingPlan] = useState(false)
+  const [stripeInputs, setStripeInputs] = useState<Record<string, string>>({})
+  const [savingStripeId, setSavingStripeId] = useState<string | null>(null)
 
   // Check for saved session on mount
   useEffect(() => {
@@ -282,7 +285,15 @@ export default function AdminPage() {
       })
       if (res.ok) {
         const data = await res.json()
-        setPlans(data.plans || [])
+        const loaded: Plan[] = data.plans || []
+        setPlans(loaded)
+        setStripeInputs(
+          Object.fromEntries(
+            loaded
+              .filter((p) => p.requiresPayment && p.price > 0)
+              .map((p) => [p.id, p.stripePriceId || ''])
+          )
+        )
       }
     } catch {
       console.error('Failed to fetch plans')
@@ -311,6 +322,36 @@ export default function AdminPage() {
       setError('Failed to activate plan')
     } finally {
       setSavingPlan(false)
+    }
+  }
+
+  const saveStripePrice = async (id: string) => {
+    const pwd = password || sessionStorage.getItem('adminPassword') || ''
+    const stripePriceId = stripeInputs[id]?.trim()
+    if (!stripePriceId) {
+      setError('Enter a Stripe Price ID (price_...)')
+      return
+    }
+    setSavingStripeId(id)
+    try {
+      const res = await fetch('/api/admin/plans', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Basic ${btoa(`admin:${pwd}`)}`,
+        },
+        body: JSON.stringify({ id, action: 'set_stripe_price', stripePriceId }),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        setError(data.error || 'Failed to save Stripe Price ID')
+        return
+      }
+      await fetchPlans()
+    } catch {
+      setError('Failed to save Stripe Price ID')
+    } finally {
+      setSavingStripeId(null)
     }
   }
 
@@ -462,6 +503,7 @@ export default function AdminPage() {
 
   const artistPlans = plans.filter((p) => p.type === 'artist').sort((a, b) => a.sortOrder - b.sortOrder)
   const labelPlans = plans.filter((p) => p.type === 'label').sort((a, b) => a.sortOrder - b.sortOrder)
+  const paidPlans = plans.filter((p) => p.requiresPayment && p.price > 0).sort((a, b) => a.sortOrder - b.sortOrder)
   const activeArtistPlan = artistPlans.find((p) => p.isActive)
   const activeLabelPlan = labelPlans.find((p) => p.isActive)
 
@@ -652,6 +694,47 @@ export default function AdminPage() {
                 </button>
               ))}
             </div>
+          </div>
+        </div>
+
+        <div className="card p-3 sm:p-4 mb-4">
+          <p className="text-sm font-medium text-[var(--text)] mb-1">💳 Stripe Price IDs (manual)</p>
+          <p className="text-[10px] text-[var(--text-muted)] mb-3">
+            Create prices in Stripe Dashboard → Products, then paste each <code className="text-[9px]">price_...</code> ID here.
+            Required before activating a paid plan.
+          </p>
+          <div className="space-y-2">
+            {paidPlans.length === 0 ? (
+              <p className="text-xs text-[var(--text-muted)]">Loading plans...</p>
+            ) : (
+              paidPlans.map((plan) => (
+                <div key={plan.id} className="flex flex-col sm:flex-row sm:items-center gap-2">
+                  <div className="sm:w-28 flex-shrink-0">
+                    <p className="text-xs font-medium text-[var(--text)]">
+                      {plan.type === 'artist' ? '🎤' : '🏢'} {planPriceLabel(plan)}
+                    </p>
+                    {plan.stripePriceId && (
+                      <p className="text-[9px] text-success">Saved ✓</p>
+                    )}
+                  </div>
+                  <input
+                    value={stripeInputs[plan.id] || ''}
+                    onChange={(e) =>
+                      setStripeInputs((prev) => ({ ...prev, [plan.id]: e.target.value }))
+                    }
+                    placeholder="price_xxxxxxxxxxxxx"
+                    className="input-field text-xs py-2 flex-1 font-mono"
+                  />
+                  <button
+                    onClick={() => saveStripePrice(plan.id)}
+                    disabled={savingStripeId === plan.id}
+                    className="btn-secondary text-xs py-2 px-3 sm:w-16"
+                  >
+                    {savingStripeId === plan.id ? '...' : 'Save'}
+                  </button>
+                </div>
+              ))
+            )}
           </div>
         </div>
 

@@ -266,6 +266,34 @@ export async function setActivePlan(idOrSlug: string): Promise<Plan | null> {
   return db.collection<Plan>(PLANS_COLLECTION).findOne({ id: plan.id })
 }
 
+export async function updatePlanStripePrice(
+  idOrSlug: string,
+  stripePriceId: string
+): Promise<Plan | null> {
+  const db = await getDatabase()
+  const trimmed = stripePriceId.trim()
+  if (!trimmed.startsWith('price_')) {
+    throw new Error('Stripe Price ID must start with price_')
+  }
+
+  const plan =
+    (await db.collection<Plan>(PLANS_COLLECTION).findOne({ id: idOrSlug })) ||
+    (await db.collection<Plan>(PLANS_COLLECTION).findOne({ slug: idOrSlug }))
+  if (!plan) return null
+
+  await db.collection(PLANS_COLLECTION).updateOne(
+    { id: plan.id },
+    {
+      $set: {
+        stripePriceId: trimmed,
+        updatedAt: new Date().toISOString(),
+      },
+    }
+  )
+
+  return db.collection<Plan>(PLANS_COLLECTION).findOne({ id: plan.id })
+}
+
 export function getPlanPriceLabel(plan: Plan): string {
   if (plan.price === 0) return 'Free'
   return `$${plan.price}/yr`
