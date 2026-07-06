@@ -5,9 +5,25 @@ import Link from 'next/link'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 
+interface WebsitePlan {
+  type: 'artist' | 'label'
+  name: string
+  price: number
+  period: string
+  description: string
+  features: string[]
+  icon: string
+  popular: boolean
+  requiresPayment: boolean
+  royaltyPercent: number
+}
+
 export default function HomePage() {
-  const [artistPlanMode, setArtistPlanMode] = useState<'free' | 'paid'>('free')
+  const [activePlans, setActivePlans] = useState<WebsitePlan[]>([])
   const [trialEnabled, setTrialEnabled] = useState(true)
+
+  const artistPlan = activePlans.find((p) => p.type === 'artist')
+  const labelPlan = activePlans.find((p) => p.type === 'label')
 
   useEffect(() => {
     // Smooth scrolling for anchor links
@@ -56,16 +72,17 @@ export default function HomePage() {
     return () => clearInterval(interval)
   }, [])
 
-  // Fetch current artist plan mode for pricing display
+  // Fetch active plans for pricing display
   useEffect(() => {
-    fetch('/api/admin/settings')
+    fetch('/api/plans')
       .then(res => res.json())
       .then(data => {
-        setArtistPlanMode(data.artistPlanMode === 'paid' ? 'paid' : 'free')
+        if (Array.isArray(data.plans)) {
+          setActivePlans(data.plans)
+        }
         setTrialEnabled(data.trialEnabled ?? true)
       })
       .catch(() => {
-        setArtistPlanMode('free')
         setTrialEnabled(true)
       })
   }, [])
@@ -188,8 +205,8 @@ export default function HomePage() {
           
           <p className="animate-slide-up-delay-2 text-lg md:text-xl text-gray-600 mb-10 leading-relaxed">
             Get your music on Spotify, Apple Music, and 150+ streaming platforms. 
-            {artistPlanMode === 'free'
-              ? ' Keep your rights and up to 80% of your royalties on our FREE Artist plan.'
+            {artistPlan && !artistPlan.requiresPayment
+              ? ` Keep your rights and up to ${artistPlan.royaltyPercent}% of your royalties on our FREE Artist plan.`
               : ' Keep 100% of your rights and royalties.'}
           </p>
           
@@ -283,8 +300,8 @@ export default function HomePage() {
             {[
               { step: 1, title: 'Upload your music', desc: 'Upload your tracks, add artwork, and fill in your release information through our simple interface.' },
               { step: 2, title: 'We distribute everywhere', desc: 'We deliver your music to Spotify, Apple Music, Amazon, and 150+ other streaming platforms worldwide.' },
-              { step: 3, title: 'Collect your royalties', desc: artistPlanMode === 'free'
-                  ? 'Track performance, monitor streams, and collect up to 80% of your royalties through our analytics dashboard.'
+              { step: 3, title: 'Collect your royalties', desc: artistPlan && !artistPlan.requiresPayment
+                  ? `Track performance, monitor streams, and collect up to ${artistPlan.royaltyPercent}% of your royalties through our analytics dashboard.`
                   : 'Track performance, monitor streams, and collect 100% of your royalties through our analytics dashboard.' },
             ].map((item, i) => (
               <div key={i} className="text-center hover:-translate-y-2 transition-transform">
@@ -312,25 +329,30 @@ export default function HomePage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-3xl mx-auto">
             {/* Artist Plan */}
             <div className="bg-white/90 backdrop-blur-sm border border-gray-200/80 rounded-xl p-8 text-center hover:border-black hover:shadow-xl hover:-translate-y-2 transition-all duration-300">
-              <h3 className="text-lg font-semibold text-black mb-1">🎤 Artist</h3>
+              <h3 className="text-lg font-semibold text-black mb-1">{artistPlan?.icon || '🎤'} {artistPlan?.name || 'Artist'}</h3>
               <p className="text-xs font-medium text-green-600 mb-3">
-                {artistPlanMode === 'free' ? 'FREE • 80% royalties • No credit card' : 'Paid plan • 100% royalties'}
+                {artistPlan && !artistPlan.requiresPayment
+                  ? `FREE • ${artistPlan.royaltyPercent}% royalties • No credit card`
+                  : `Paid plan • ${artistPlan?.royaltyPercent || 100}% royalties`}
               </p>
               <div className="text-5xl font-bold text-black mb-2">
-                {artistPlanMode === 'free' ? '$0' : '$5'}
+                ${artistPlan?.price ?? 0}
               </div>
               <div className="text-gray-600 mb-6">
-                {artistPlanMode === 'free' ? 'for Artist plan' : 'per year'}
+                {artistPlan && !artistPlan.requiresPayment ? 'for Artist plan' : `per ${artistPlan?.period || 'year'}`}
               </div>
               <ul className="text-left space-y-3 mb-8">
-                {[
-                  '1 Artist',
-                  'Unlimited releases',
-                  '450+ streaming platforms',
-                  artistPlanMode === 'free' ? 'Keep 80% royalties' : 'Keep 100% royalties',
-                  'Basic analytics',
-                  'Release in 48 hours',
-                ].map((feature, i) => (
+                {(artistPlan?.features?.length
+                  ? artistPlan.features
+                  : [
+                      '1 Artist',
+                      'Unlimited releases',
+                      '450+ streaming platforms',
+                      'Keep 80% royalties',
+                      'Basic analytics',
+                      'Release in 48 hours',
+                    ]
+                ).map((feature, i) => (
                   <li key={i} className="flex items-center gap-2 text-gray-600 hover:text-black hover:translate-x-1 transition-all">
                     <span className="text-green-500 font-bold">✓</span> {feature}
                   </li>
@@ -346,19 +368,24 @@ export default function HomePage() {
 
             {/* Label Plan */}
             <div className="relative bg-white/90 backdrop-blur-sm border-2 border-black rounded-xl p-8 text-center scale-105 bg-black/5 hover:shadow-xl transition-all duration-300">
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-black text-white px-4 py-1 rounded-full text-sm font-medium">
-                Most Popular
-              </div>
-              <h3 className="text-lg font-semibold text-black mb-4">🏢 Label</h3>
-              <div className="text-5xl font-bold text-black mb-2">$20</div>
-              <div className="text-gray-600 mb-2">per year</div>
+              {(labelPlan?.popular ?? true) && (
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-black text-white px-4 py-1 rounded-full text-sm font-medium">
+                  Most Popular
+                </div>
+              )}
+              <h3 className="text-lg font-semibold text-black mb-4">{labelPlan?.icon || '🏢'} {labelPlan?.name || 'Label'}</h3>
+              <div className="text-5xl font-bold text-black mb-2">${labelPlan?.price ?? 20}</div>
+              <div className="text-gray-600 mb-2">per {labelPlan?.period || 'year'}</div>
               {trialEnabled && (
                 <div className="inline-block bg-green-500 text-white px-3 py-1 rounded-full text-xs font-medium mb-6">
                   🎁 1 Month Free Trial
                 </div>
               )}
               <ul className="text-left space-y-3 mb-8">
-                {['Everything in Artist', 'Unlimited Artist', 'Advanced analytics', 'Priority support', 'Release in 24 hours'].map((feature, i) => (
+                {(labelPlan?.features?.length
+                  ? labelPlan.features
+                  : ['Everything in Artist', 'Unlimited Artist', 'Advanced analytics', 'Priority support', 'Release in 24 hours']
+                ).map((feature, i) => (
                   <li key={i} className="flex items-center gap-2 text-gray-600 hover:text-black hover:translate-x-1 transition-all">
                     <span className="text-green-500 font-bold">✓</span> {feature}
                   </li>

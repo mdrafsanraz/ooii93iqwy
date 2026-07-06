@@ -41,6 +41,35 @@ interface Stats {
   trials: number
 }
 
+interface Plan {
+  id: string
+  type: 'artist' | 'label'
+  name: string
+  price: number
+  period: string
+  description: string
+  features: string[]
+  icon: string
+  popular: boolean
+  isActive: boolean
+  requiresPayment: boolean
+  royaltyPercent: number
+  sortOrder: number
+}
+
+const emptyPlanForm = {
+  type: 'artist' as 'artist' | 'label',
+  name: '',
+  price: 0,
+  period: 'year',
+  description: '',
+  features: '',
+  icon: '🎤',
+  popular: false,
+  requiresPayment: false,
+  royaltyPercent: 80,
+}
+
 export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [password, setPassword] = useState('')
@@ -55,8 +84,12 @@ export default function AdminPage() {
   const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'yesterday'>('all')
   const [checkingAuth, setCheckingAuth] = useState(true)
   const [trialEnabled, setTrialEnabled] = useState(true)
-  const [artistPlanMode, setArtistPlanMode] = useState<'free' | 'paid'>('free')
   const [savingSettings, setSavingSettings] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [plans, setPlans] = useState<Plan[]>([])
+  const [showPlanForm, setShowPlanForm] = useState(false)
+  const [planForm, setPlanForm] = useState(emptyPlanForm)
+  const [savingPlan, setSavingPlan] = useState(false)
 
   // Check for saved session on mount
   useEffect(() => {
@@ -244,12 +277,105 @@ export default function AdminPage() {
       if (res.ok) {
         const data = await res.json()
         setTrialEnabled(data.trialEnabled ?? true)
-        setArtistPlanMode(data.artistPlanMode === 'paid' ? 'paid' : 'free')
       }
     } catch {
       console.error('Failed to fetch settings')
     }
   }, [])
+
+  const fetchPlans = useCallback(async () => {
+    const pwd = password || sessionStorage.getItem('adminPassword') || ''
+    try {
+      const res = await fetch('/api/admin/plans', {
+        headers: { 'Authorization': `Basic ${btoa(`admin:${pwd}`)}` },
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setPlans(data.plans || [])
+      }
+    } catch {
+      console.error('Failed to fetch plans')
+    }
+  }, [password])
+
+  const activatePlan = async (id: string) => {
+    const pwd = password || sessionStorage.getItem('adminPassword') || ''
+    setSavingPlan(true)
+    try {
+      const res = await fetch('/api/admin/plans', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Basic ${btoa(`admin:${pwd}`)}`,
+        },
+        body: JSON.stringify({ id, action: 'activate' }),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        setError(data.error || 'Failed to activate plan')
+        return
+      }
+      await fetchPlans()
+    } catch {
+      setError('Failed to activate plan')
+    } finally {
+      setSavingPlan(false)
+    }
+  }
+
+  const createPlan = async () => {
+    const pwd = password || sessionStorage.getItem('adminPassword') || ''
+    if (!planForm.name.trim()) {
+      setError('Plan name is required')
+      return
+    }
+    setSavingPlan(true)
+    try {
+      const res = await fetch('/api/admin/plans', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Basic ${btoa(`admin:${pwd}`)}`,
+        },
+        body: JSON.stringify(planForm),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        setError(data.error || 'Failed to create plan')
+        return
+      }
+      setPlanForm(emptyPlanForm)
+      setShowPlanForm(false)
+      await fetchPlans()
+    } catch {
+      setError('Failed to create plan')
+    } finally {
+      setSavingPlan(false)
+    }
+  }
+
+  const deletePlan = async (id: string) => {
+    if (!confirm('Delete this plan?')) return
+    const pwd = password || sessionStorage.getItem('adminPassword') || ''
+    try {
+      const res = await fetch('/api/admin/plans', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Basic ${btoa(`admin:${pwd}`)}`,
+        },
+        body: JSON.stringify({ id }),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        setError(data.error || 'Failed to delete plan')
+        return
+      }
+      await fetchPlans()
+    } catch {
+      setError('Failed to delete plan')
+    }
+  }
 
   const toggleTrial = async () => {
     const pwd = password || sessionStorage.getItem('adminPassword') || ''
@@ -267,32 +393,6 @@ export default function AdminPage() {
       
       if (res.ok) {
         setTrialEnabled(newValue)
-      } else {
-        setError('Failed to update settings')
-      }
-    } catch {
-      setError('Failed to update settings')
-    } finally {
-      setSavingSettings(false)
-    }
-  }
-
-  const toggleArtistPlanMode = async () => {
-    const pwd = password || sessionStorage.getItem('adminPassword') || ''
-    setSavingSettings(true)
-    try {
-      const newMode: 'free' | 'paid' = artistPlanMode === 'free' ? 'paid' : 'free'
-      const res = await fetch('/api/admin/settings', {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Basic ${btoa(`admin:${pwd}`)}`
-        },
-        body: JSON.stringify({ artistPlanMode: newMode })
-      })
-
-      if (res.ok) {
-        setArtistPlanMode(newMode)
       } else {
         setError('Failed to update settings')
       }
@@ -329,43 +429,99 @@ export default function AdminPage() {
   }
 
   const filteredRegistrations = getFilteredRegistrations()
+  const selectedRegistrations = filteredRegistrations.filter((reg) => selectedIds.has(reg.id))
+  const allFilteredSelected =
+    filteredRegistrations.length > 0 &&
+    filteredRegistrations.every((reg) => selectedIds.has(reg.id))
 
-  const exportToCSV = () => {
-    if (filteredRegistrations.length === 0) {
-      alert('No registrations to export with current filters')
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  const toggleSelectAllFiltered = () => {
+    if (allFilteredSelected) {
+      setSelectedIds(new Set())
       return
     }
+    setSelectedIds(new Set(filteredRegistrations.map((reg) => reg.id)))
+  }
 
+  const downloadCSV = (rows: Registration[], filename: string) => {
     const headers = ['Email', 'Account Type (Label or Artist)']
-    const rows = filteredRegistrations.map(reg => [
+    const csvRows = rows.map((reg) => [
       reg.email,
-      reg.plan === 'label' ? 'Label' : 'Artist'
+      reg.plan === 'label' ? 'Label' : 'Artist',
     ])
-
-    const csvContent = [
-      headers.join(','),
-      ...rows.map(row => row.join(','))
-    ].join('\n')
-
+    const csvContent = [headers.join(','), ...csvRows.map((row) => row.join(','))].join('\n')
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    link.download = 'import-template.csv'
+    link.download = filename
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
     URL.revokeObjectURL(url)
   }
 
+  const exportToCSV = () => {
+    if (filteredRegistrations.length === 0) {
+      alert('No registrations to export with current filters')
+      return
+    }
+    downloadCSV(filteredRegistrations, 'import-template.csv')
+  }
+
+  const exportSelectedToCSV = () => {
+    if (selectedRegistrations.length === 0) {
+      alert('Select at least one registration to export')
+      return
+    }
+    downloadCSV(selectedRegistrations, 'import-template-selected.csv')
+  }
+
+  const bulkMarkSelected = async () => {
+    const pendingSelected = selectedRegistrations.filter((reg) => !reg.accountCreated)
+    if (pendingSelected.length === 0) {
+      alert('No pending registrations selected')
+      return
+    }
+    if (!confirm(`Mark ${pendingSelected.length} registration(s) as created?`)) return
+
+    try {
+      await Promise.all(
+        pendingSelected.map((reg) =>
+          fetch('/api/admin/registrations', {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Basic ${btoa(`admin:${password}`)}`,
+            },
+            body: JSON.stringify({ id: reg.id, accountCreated: true }),
+          })
+        )
+      )
+      setSelectedIds(new Set())
+      await fetchData()
+    } catch {
+      setError('Bulk mark failed')
+    }
+  }
+
   useEffect(() => {
     if (isAuthenticated) {
       fetchData()
       fetchSettings()
+      fetchPlans()
       const interval = setInterval(fetchData, 30000)
       return () => clearInterval(interval)
     }
-  }, [isAuthenticated, fetchData, fetchSettings])
+  }, [isAuthenticated, fetchData, fetchSettings, fetchPlans])
 
   if (checkingAuth) {
     return (
@@ -504,34 +660,143 @@ export default function AdminPage() {
             </p>
           </div>
 
-          <div className="card p-3 sm:p-4">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-[var(--text)]">🎤 Artist Plan</p>
+          <div className="card p-3 sm:p-4 sm:col-span-2">
+            <div className="flex items-center justify-between gap-3 mb-3">
+              <div>
+                <p className="text-sm font-medium text-[var(--text)]">📋 Plan Manager</p>
                 <p className="text-[10px] text-[var(--text-muted)]">
-                  {artistPlanMode === 'free'
-                    ? 'FREE • no credit card • 80% royalties'
-                    : 'PAID • previous Artist plan'}
+                  Active plans are shown on the website. One active plan per type (Artist / Label).
                 </p>
               </div>
               <button
-                onClick={toggleArtistPlanMode}
-                disabled={savingSettings}
-                className={`relative w-12 h-6 rounded-full transition-colors flex-shrink-0 ${
-                  artistPlanMode === 'free' ? 'bg-success' : 'bg-gray-300'
-                } ${savingSettings ? 'opacity-50' : ''}`}
-                title="Toggle Artist plan between Free and Paid"
+                onClick={() => setShowPlanForm((v) => !v)}
+                className="btn-secondary text-xs py-1.5 px-3"
               >
-                <span
-                  className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
-                    artistPlanMode === 'free' ? 'left-6' : 'left-0.5'
-                  }`}
-                />
+                {showPlanForm ? 'Cancel' : '+ New Plan'}
               </button>
             </div>
-            <p className={`text-[10px] mt-2 ${artistPlanMode === 'free' ? 'text-success' : 'text-[var(--text-muted)]'}`}>
-              {artistPlanMode === 'free' ? '✓ Free mode active' : '✕ Paid mode active'}
-            </p>
+
+            {showPlanForm && (
+              <div className="mb-4 p-3 rounded-lg border border-[var(--border)] bg-[var(--surface)] space-y-2">
+                <div className="grid grid-cols-2 gap-2">
+                  <select
+                    value={planForm.type}
+                    onChange={(e) =>
+                      setPlanForm({
+                        ...planForm,
+                        type: e.target.value as 'artist' | 'label',
+                        icon: e.target.value === 'artist' ? '🎤' : '🏢',
+                      })
+                    }
+                    className="input-field text-xs py-2"
+                  >
+                    <option value="artist">Artist</option>
+                    <option value="label">Label</option>
+                  </select>
+                  <input
+                    value={planForm.name}
+                    onChange={(e) => setPlanForm({ ...planForm, name: e.target.value })}
+                    placeholder="Plan name"
+                    className="input-field text-xs py-2"
+                  />
+                  <input
+                    type="number"
+                    min={0}
+                    value={planForm.price}
+                    onChange={(e) =>
+                      setPlanForm({
+                        ...planForm,
+                        price: Number(e.target.value),
+                        requiresPayment: Number(e.target.value) > 0,
+                      })
+                    }
+                    placeholder="Price"
+                    className="input-field text-xs py-2"
+                  />
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    value={planForm.royaltyPercent}
+                    onChange={(e) => setPlanForm({ ...planForm, royaltyPercent: Number(e.target.value) })}
+                    placeholder="Royalties %"
+                    className="input-field text-xs py-2"
+                  />
+                </div>
+                <input
+                  value={planForm.description}
+                  onChange={(e) => setPlanForm({ ...planForm, description: e.target.value })}
+                  placeholder="Short description"
+                  className="input-field text-xs py-2 w-full"
+                />
+                <textarea
+                  value={planForm.features}
+                  onChange={(e) => setPlanForm({ ...planForm, features: e.target.value })}
+                  placeholder="Features (one per line)"
+                  rows={4}
+                  className="input-field text-xs py-2 w-full"
+                />
+                <label className="flex items-center gap-2 text-xs text-[var(--text-muted)]">
+                  <input
+                    type="checkbox"
+                    checked={planForm.requiresPayment}
+                    onChange={(e) => setPlanForm({ ...planForm, requiresPayment: e.target.checked })}
+                  />
+                  Requires payment
+                </label>
+                <button onClick={createPlan} disabled={savingPlan} className="btn-primary text-xs py-2 w-full">
+                  {savingPlan ? 'Saving...' : 'Create Plan'}
+                </button>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              {plans.length === 0 ? (
+                <p className="text-xs text-[var(--text-muted)]">Loading plans...</p>
+              ) : (
+                plans.map((plan) => (
+                  <div
+                    key={plan.id}
+                    className={`flex items-center justify-between gap-2 p-2 rounded-lg border ${
+                      plan.isActive ? 'border-success/40 bg-success/5' : 'border-[var(--border)]'
+                    }`}
+                  >
+                    <div className="min-w-0">
+                      <p className="text-xs font-medium text-[var(--text)] truncate">
+                        {plan.icon} {plan.name}{' '}
+                        <span className="text-[var(--text-muted)]">({plan.type})</span>
+                      </p>
+                      <p className="text-[10px] text-[var(--text-muted)] truncate">
+                        ${plan.price}/{plan.period} • {plan.royaltyPercent}% royalties
+                        {plan.isActive ? ' • LIVE on website' : ''}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      {!plan.isActive && (
+                        <>
+                          <button
+                            onClick={() => activatePlan(plan.id)}
+                            disabled={savingPlan}
+                            className="text-[10px] px-2 py-1 rounded-md bg-primary text-white"
+                          >
+                            Set Active
+                          </button>
+                          <button
+                            onClick={() => deletePlan(plan.id)}
+                            className="text-[10px] px-2 py-1 rounded-md bg-error/10 text-error"
+                          >
+                            Delete
+                          </button>
+                        </>
+                      )}
+                      {plan.isActive && (
+                        <span className="text-[10px] px-2 py-1 rounded-md bg-success/10 text-success">Active</span>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         </div>
 
@@ -636,13 +901,30 @@ export default function AdminPage() {
             </div>
           </div>
 
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-[10px] text-[var(--text-muted)]">
               Showing {filteredRegistrations.length} of {registrations.length}
+              {selectedIds.size > 0 ? ` • ${selectedIds.size} selected` : ''}
             </p>
-            <button onClick={exportToCSV} disabled={filteredRegistrations.length === 0} className="btn-secondary text-xs py-2 px-3">
-              📥 Export ({filteredRegistrations.length})
-            </button>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                onClick={bulkMarkSelected}
+                disabled={selectedRegistrations.filter((r) => !r.accountCreated).length === 0}
+                className="btn-primary text-xs py-2 px-3"
+              >
+                ✓ Mark Selected
+              </button>
+              <button
+                onClick={exportSelectedToCSV}
+                disabled={selectedRegistrations.length === 0}
+                className="btn-secondary text-xs py-2 px-3"
+              >
+                📥 Export Selected ({selectedRegistrations.length})
+              </button>
+              <button onClick={exportToCSV} disabled={filteredRegistrations.length === 0} className="btn-secondary text-xs py-2 px-3">
+                📥 Export All ({filteredRegistrations.length})
+              </button>
+            </div>
           </div>
         </div>
 
@@ -659,7 +941,16 @@ export default function AdminPage() {
             <div className="p-6 text-center text-sm text-[var(--text-muted)]">No registrations</div>
           ) : (
             <div className="overflow-x-auto">
-              <div className="grid grid-cols-6 gap-2 p-3 bg-[var(--surface)] border-b border-[var(--border)] text-[10px] font-semibold text-[var(--text-muted)] uppercase tracking-wide">
+              <div className="grid grid-cols-7 gap-2 p-3 bg-[var(--surface)] border-b border-[var(--border)] text-[10px] font-semibold text-[var(--text-muted)] uppercase tracking-wide">
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={allFilteredSelected}
+                    onChange={toggleSelectAllFiltered}
+                    className="w-3.5 h-3.5"
+                    aria-label="Select all filtered registrations"
+                  />
+                </div>
                 <div>Name / Email</div>
                 <div>Type</div>
                 <div>Payment</div>
@@ -673,8 +964,17 @@ export default function AdminPage() {
                   <div
                     key={reg.id}
                     onClick={() => setSelectedRegistration(reg)}
-                    className="grid grid-cols-6 gap-2 p-3 hover:bg-[var(--surface)] cursor-pointer items-center"
+                    className="grid grid-cols-7 gap-2 p-3 hover:bg-[var(--surface)] cursor-pointer items-center"
                   >
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(reg.id)}
+                        onChange={() => toggleSelect(reg.id)}
+                        className="w-3.5 h-3.5"
+                        aria-label={`Select ${reg.email}`}
+                      />
+                    </div>
                     <div>
                       <p className="text-sm font-medium text-[var(--text)] truncate">{reg.name}</p>
                       <p className="text-[10px] text-[var(--text-muted)] truncate">{reg.email}</p>

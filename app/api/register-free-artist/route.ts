@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Resend } from 'resend'
 import { addRegistration, emailExists } from '@/lib/registrations'
+import { getActivePlan } from '@/lib/plans'
 
 function generateTxnId() {
   return `FREE-ARTIST-${Date.now()}-${Math.random().toString(36).substring(2, 10)}`
@@ -65,6 +66,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid Spotify / music link URL' }, { status: 400 })
     }
 
+    const activeArtistPlan = await getActivePlan('artist')
+    if (!activeArtistPlan || activeArtistPlan.requiresPayment || activeArtistPlan.price > 0) {
+      return NextResponse.json(
+        { error: 'Artist plan currently requires payment. Please continue to checkout.' },
+        { status: 400 }
+      )
+    }
+
     // Duplicate protection
     try {
       const exists = await emailExists(email)
@@ -111,7 +120,7 @@ export async function POST(request: NextRequest) {
           const adminHtml = `
             <div style="font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Arial, sans-serif;">
               <h2>🎉 New FREE Artist Registration</h2>
-              <p><strong>Royalties:</strong> 80%</p>
+              <p><strong>Royalties:</strong> ${activeArtistPlan.royaltyPercent}%</p>
               <p><strong>Name:</strong> ${name}</p>
               <p><strong>Email:</strong> ${email}</p>
               <p><strong>Phone:</strong> ${phone}</p>

@@ -14,6 +14,19 @@ const stripePromise = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
 type Plan = 'artist' | 'label'
 type Step = 'plan' | 'details' | 'payment'
 
+interface WebsitePlan {
+  type: Plan
+  name: string
+  price: number
+  period: string
+  description: string
+  features: string[]
+  icon: string
+  popular: boolean
+  requiresPayment: boolean
+  royaltyPercent: number
+}
+
 interface FormData {
   plan: Plan | null
   name: string
@@ -29,46 +42,47 @@ interface FormData {
 
 type ValidationErrors = Partial<Record<keyof FormData, string>>
 
-function getPlans(artistPlanMode: 'free' | 'paid') {
-  return {
-    artist: {
-      name: 'Artist',
-      price: artistPlanMode === 'free' ? 0 : 5,
-      period: 'year',
-      description: artistPlanMode === 'free' ? 'Free for independent artists' : 'For independent artists',
-      features: [
-        'Unlimited releases',
-        '150+ platforms',
-        `${artistPlanMode === 'free' ? '80%' : '100%'} royalties`,
-        'Basic analytics',
-        '48h release',
-        ...(artistPlanMode === 'free' ? ['No credit card required'] : []),
-      ],
-      icon: '🎤',
-      popular: artistPlanMode === 'free',
-    },
-    label: {
-      name: 'Label',
-      price: 20,
-      period: 'year',
-      description: 'For labels & managers',
-      features: [
-        'Everything in Artist',
-        'Multi-artist management',
-        'Advanced analytics',
-        'Priority support',
-        '24h release',
-      ],
-      icon: '🏢',
-      popular: artistPlanMode !== 'free',
-    },
-  } as const
+const fallbackPlans: Record<Plan, WebsitePlan> = {
+  artist: {
+    type: 'artist',
+    name: 'Artist',
+    price: 0,
+    period: 'year',
+    description: 'Free for independent artists',
+    features: ['Unlimited releases', '150+ platforms', '80% royalties', 'Basic analytics', '48h release', 'No credit card required'],
+    icon: '🎤',
+    popular: true,
+    requiresPayment: false,
+    royaltyPercent: 80,
+  },
+  label: {
+    type: 'label',
+    name: 'Label',
+    price: 20,
+    period: 'year',
+    description: 'For labels & managers',
+    features: ['Everything in Artist', 'Multi-artist management', 'Advanced analytics', 'Priority support', '24h release'],
+    icon: '🏢',
+    popular: true,
+    requiresPayment: true,
+    royaltyPercent: 100,
+  },
+}
+
+function plansFromApi(items: WebsitePlan[]): Record<Plan, WebsitePlan> {
+  const next = { ...fallbackPlans }
+  for (const item of items) {
+    if (item.type === 'artist' || item.type === 'label') {
+      next[item.type] = item
+    }
+  }
+  return next
 }
 
 export default function SignupPage() {
   const [step, setStep] = useState<Step>('plan')
   const [freeTrial, setFreeTrial] = useState(false)
-  const [artistPlanMode, setArtistPlanMode] = useState<'free' | 'paid'>('free')
+  const [plans, setPlans] = useState<Record<Plan, WebsitePlan>>(fallbackPlans)
   const [formData, setFormData] = useState<FormData>({
     plan: null,
     name: '',
@@ -89,20 +103,19 @@ export default function SignupPage() {
   const [trialEnabled, setTrialEnabled] = useState(false)
   const [settingsLoaded, setSettingsLoaded] = useState(false)
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({})
-  const plans = getPlans(artistPlanMode)
 
-  // Fetch trial setting on mount
+  // Fetch active plans + trial setting on mount
   useEffect(() => {
-    fetch('/api/admin/settings')
+    fetch('/api/plans')
       .then(res => res.json())
       .then(data => {
+        if (Array.isArray(data.plans) && data.plans.length > 0) {
+          setPlans(plansFromApi(data.plans))
+        }
         setTrialEnabled(data.trialEnabled ?? true)
-        setArtistPlanMode(data.artistPlanMode === 'paid' ? 'paid' : 'free')
       })
       .catch(() => {
-        // Default to enabled on error
         setTrialEnabled(true)
-        setArtistPlanMode('free')
       })
       .finally(() => {
         setSettingsLoaded(true)
@@ -237,7 +250,7 @@ export default function SignupPage() {
     setValidationErrors(errors)
     if (Object.keys(errors).length > 0) return
 
-    if (formData.plan === 'artist' && artistPlanMode === 'free') {
+    if (formData.plan === 'artist' && !plans.artist.requiresPayment && plans.artist.price <= 0) {
       await completeFreeArtistSignup()
       return
     }
@@ -678,7 +691,7 @@ export default function SignupPage() {
                         <p className="text-xs text-[var(--text-muted)]">
                           {formData.freeTrial
                             ? '$0 first month'
-                            : (formData.plan === 'artist' && artistPlanMode === 'free')
+                            : (formData.plan === 'artist' && !plans.artist.requiresPayment)
                               ? 'Free • no credit card'
                               : `$${formData.plan && plans[formData.plan].price}/yr`}
                         </p>

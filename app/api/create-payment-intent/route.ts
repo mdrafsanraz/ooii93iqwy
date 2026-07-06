@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { emailExists } from '@/lib/registrations'
-import { getDatabase } from '@/lib/mongodb'
+import { getActivePlan } from '@/lib/plans'
+import { getOrCreateStripePriceForPlan } from '@/lib/stripePlans'
 
 function hasValidLinks(value?: string) {
   if (!value || !value.trim()) return false
@@ -92,18 +93,15 @@ export async function POST(request: NextRequest) {
     // Guard: Artist plan might be temporarily free (no credit card required)
     if (plan === 'artist') {
       try {
-        const db = await getDatabase()
-        const settings = await db.collection('settings').findOne({ settingsId: 'app_settings' })
-        const artistPlanMode = settings?.artistPlanMode === 'paid' ? 'paid' : 'free'
-        if (artistPlanMode === 'free') {
+        const activeArtistPlan = await getActivePlan('artist')
+        if (!activeArtistPlan?.requiresPayment || activeArtistPlan.price <= 0) {
           return NextResponse.json(
             { error: 'Artist plan is currently free. No payment is required.' },
             { status: 400 }
           )
         }
       } catch (settingsError) {
-        // If settings lookup fails, default to free to avoid charging unexpectedly.
-        console.error('Settings lookup error (artist plan mode):', settingsError)
+        console.error('Active plan lookup error (artist):', settingsError)
         return NextResponse.json(
           { error: 'Artist plan is currently free. No payment is required.' },
           { status: 400 }
@@ -126,51 +124,26 @@ export async function POST(request: NextRequest) {
       // Continue with registration if DB check fails (to not block users)
     }
 
-    // Get or create price IDs for subscriptions
-    let priceId: string | undefined
+    // Resolve Stripe price from the active plan (creates one if missing)
+    const activePlan = await getActivePlan(plan)
+    const planAmount = activePlan?.price ?? (plan === 'artist' ? 5 : 20)
 
-    if (plan === 'artist') {
-      priceId = process.env.STRIPE_ARTIST_PRICE_ID
-      
-      if (!priceId) {
-        // Create Artist product and price if not exists
-        const product = await stripe.products.create({
-          name: 'RDistro Artist Plan',
-          description: 'Annual artist distribution plan - $5/year',
-        })
-        const price = await stripe.prices.create({
-          product: product.id,
-          unit_amount: 500, // $5.00
-          currency: 'usd',
-          recurring: { interval: 'year' },
-        })
-        priceId = price.id
-        console.log('Created Artist price:', priceId)
-      }
-    } else if (plan === 'label') {
-      priceId = process.env.STRIPE_LABEL_PRICE_ID
-      
-      if (!priceId) {
-        // Create Label product and price if not exists
-        const product = await stripe.products.create({
-          name: 'RDistro Label Plan',
-          description: 'Annual label distribution plan - $20/year',
-        })
-        const price = await stripe.prices.create({
-          product: product.id,
-          unit_amount: 2000, // $20.00
-          currency: 'usd',
-          recurring: { interval: 'year' },
-        })
-        priceId = price.id
-        console.log('Created Label price:', priceId)
-      }
+    if (!activePlan) {
+      return NextResponse.json({ error: 'No active plan found for checkout' }, { status: 400 })
+    }
+
+    let priceId: string | null = null
+    try {
+      priceId = await getOrCreateStripePriceForPlan(activePlan)
+    } catch (stripePlanError) {
+      console.error('Stripe plan price error:', stripePlanError)
+      return NextResponse.json({ error: 'Payment system not configured' }, { status: 500 })
     }
 
     if (!priceId) {
       return NextResponse.json(
-        { error: 'Price configuration error' },
-        { status: 500 }
+        { error: 'This plan does not require payment' },
+        { status: 400 }
       )
     }
 
@@ -290,7 +263,7 @@ export async function POST(request: NextRequest) {
       customerId: customer.id,
       trialEnd,
       plan,
-      amount: plan === 'artist' ? 5 : 20,
+      amount: planAmount,
     })
   } catch (error) {
     console.error('Payment intent error:', error)
