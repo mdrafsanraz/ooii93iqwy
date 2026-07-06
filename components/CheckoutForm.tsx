@@ -175,7 +175,7 @@ export default function CheckoutForm({
       <button
         type="submit"
         disabled={!stripe || isProcessing}
-        className="btn-primary w-full mt-4 flex items-center justify-center gap-2"
+        className="w-full mt-5 py-3.5 rounded-xl font-semibold bg-black text-white hover:bg-gray-800 transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
       >
         {isProcessing && (
           <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24">

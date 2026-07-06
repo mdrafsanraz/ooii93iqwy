@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
+import AnimatedBrandLogo from '@/components/AnimatedBrandLogo'
 
 export default function Header() {
   const [scrolled, setScrolled] = useState(false)
@@ -26,63 +27,7 @@ export default function Header() {
       <div className="max-w-7xl mx-auto px-4 md:px-8">
         <div className="flex items-center justify-between h-16 md:h-20">
           {/* Logo */}
-          <Link href="/" className="flex items-center">
-            <svg viewBox="0 0 300 100" xmlns="http://www.w3.org/2000/svg" className="h-10 md:h-12 w-auto">
-              <defs>
-                <linearGradient id="headerWaveGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" style={{ stopColor: '#000000', stopOpacity: 1 }} />
-                  <stop offset="50%" style={{ stopColor: '#374151', stopOpacity: 1 }} />
-                  <stop offset="100%" style={{ stopColor: '#000000', stopOpacity: 1 }} />
-                </linearGradient>
-              </defs>
-              
-              {/* Sound wave visualization */}
-              <g transform="translate(20, 30)">
-                <rect x="0" y="20" width="3" height="20" fill="url(#headerWaveGradient)" rx="1.5">
-                  <animate attributeName="height" values="20;35;20" dur="1.5s" repeatCount="indefinite"/>
-                  <animate attributeName="y" values="20;12.5;20" dur="1.5s" repeatCount="indefinite"/>
-                </rect>
-                <rect x="8" y="15" width="3" height="30" fill="url(#headerWaveGradient)" rx="1.5">
-                  <animate attributeName="height" values="30;40;30" dur="1.8s" repeatCount="indefinite"/>
-                  <animate attributeName="y" values="15;10;15" dur="1.8s" repeatCount="indefinite"/>
-                </rect>
-                <rect x="16" y="10" width="3" height="40" fill="url(#headerWaveGradient)" rx="1.5">
-                  <animate attributeName="height" values="40;45;40" dur="1.2s" repeatCount="indefinite"/>
-                  <animate attributeName="y" values="10;7.5;10" dur="1.2s" repeatCount="indefinite"/>
-                </rect>
-                <rect x="24" y="18" width="3" height="24" fill="url(#headerWaveGradient)" rx="1.5">
-                  <animate attributeName="height" values="24;38;24" dur="2s" repeatCount="indefinite"/>
-                  <animate attributeName="y" values="18;11;18" dur="2s" repeatCount="indefinite"/>
-                </rect>
-                <rect x="32" y="12" width="3" height="36" fill="url(#headerWaveGradient)" rx="1.5">
-                  <animate attributeName="height" values="36;42;36" dur="1.6s" repeatCount="indefinite"/>
-                  <animate attributeName="y" values="12;9;12" dur="1.6s" repeatCount="indefinite"/>
-                </rect>
-                
-                <path d="M45 25 L55 20 L53 22 L58 22 L58 28 L53 28 L55 30 Z" fill="url(#headerWaveGradient)" opacity="0.8">
-                  <animate attributeName="opacity" values="0.8;1;0.8" dur="2s" repeatCount="indefinite"/>
-                </path>
-                <path d="M45 35 L55 30 L53 32 L58 32 L58 38 L53 38 L55 40 Z" fill="url(#headerWaveGradient)" opacity="0.6">
-                  <animate attributeName="opacity" values="0.6;1;0.6" dur="2.5s" repeatCount="indefinite"/>
-                </path>
-              </g>
-              
-              {/* Company name */}
-              <text x="100" y="60" fontFamily="Arial, sans-serif" fontWeight="bold" fontSize="20" fill="url(#headerWaveGradient)">RDISTRO</text>
-              <text x="100" y="76" fontFamily="Arial, sans-serif" fontWeight="300" fontSize="12" fill="#6b7280" letterSpacing="2px">MUSIC DISTRIBUTION</text>
-              
-              {/* Subtle connecting dots */}
-              <circle cx="75" cy="30" r="2" fill="#8b5cf6" opacity="0.6">
-                <animate attributeName="opacity" values="0.6;1;0.6" dur="3s" repeatCount="indefinite"/>
-              </circle>
-              <circle cx="80" cy="45" r="1.5" fill="#ec4899" opacity="0.4">
-                <animate attributeName="opacity" values="0.4;0.8;0.4" dur="2.8s" repeatCount="indefinite"/>
-              </circle>
-              <circle cx="85" cy="35" r="1" fill="#6366f1" opacity="0.5">
-                <animate attributeName="opacity" values="0.5;0.9;0.5" dur="2.2s" repeatCount="indefinite"/>
-              </circle>
-            </svg>
-          </Link>
+          <AnimatedBrandLogo gradientId="headerWaveGradient" className="h-9 md:h-11 w-auto" />
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-8">

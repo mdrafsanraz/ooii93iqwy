@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { loadStripe } from '@stripe/stripe-js'
 import { Elements } from '@stripe/react-stripe-js'
 import CheckoutForm from '@/components/CheckoutForm'
+import AnimatedBrandLogo from '@/components/AnimatedBrandLogo'
 import type { WebsitePlan } from '@/lib/publicPlans'
 
 const stripePromise = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY 
@@ -235,122 +236,137 @@ export default function SignupClient({ plans: initialPlans, trialEnabled }: Sign
   }
 
   const stepIndex = ['plan', 'details', 'payment'].indexOf(step)
+  const isFreeArtistFlow =
+    formData.plan === 'artist' && !plans.artist.requiresPayment && plans.artist.price <= 0
+  const stepLabels = isFreeArtistFlow
+    ? ['Plan', 'Details']
+    : ['Plan', 'Details', 'Payment']
 
   return (
-    <div className="min-h-screen bg-[var(--surface)]">
+    <div className="min-h-screen bg-[#fafafa] relative">
+      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-violet-100/50 rounded-full blur-3xl -translate-y-1/3 translate-x-1/4" />
+        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-cyan-100/40 rounded-full blur-3xl translate-y-1/4 -translate-x-1/4" />
+      </div>
+
       {/* Header */}
-      <header className="bg-white border-b border-[var(--border)] sticky top-0 z-50">
-        <div className="max-w-3xl mx-auto px-4 py-2 flex items-center justify-between">
-          <Link href="/" className="flex items-center">
-            <svg viewBox="0 0 300 100" xmlns="http://www.w3.org/2000/svg" className="h-10 w-auto">
-              <defs>
-                <linearGradient id="signupWaveGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" style={{ stopColor: '#000000', stopOpacity: 1 }} />
-                  <stop offset="50%" style={{ stopColor: '#374151', stopOpacity: 1 }} />
-                  <stop offset="100%" style={{ stopColor: '#000000', stopOpacity: 1 }} />
-                </linearGradient>
-              </defs>
-              
-              {/* Sound wave visualization */}
-              <g transform="translate(20, 30)">
-                <rect x="0" y="20" width="3" height="20" fill="url(#signupWaveGradient)" rx="1.5">
-                  <animate attributeName="height" values="20;35;20" dur="1.5s" repeatCount="indefinite"/>
-                  <animate attributeName="y" values="20;12.5;20" dur="1.5s" repeatCount="indefinite"/>
-                </rect>
-                <rect x="8" y="15" width="3" height="30" fill="url(#signupWaveGradient)" rx="1.5">
-                  <animate attributeName="height" values="30;40;30" dur="1.8s" repeatCount="indefinite"/>
-                  <animate attributeName="y" values="15;10;15" dur="1.8s" repeatCount="indefinite"/>
-                </rect>
-                <rect x="16" y="10" width="3" height="40" fill="url(#signupWaveGradient)" rx="1.5">
-                  <animate attributeName="height" values="40;45;40" dur="1.2s" repeatCount="indefinite"/>
-                  <animate attributeName="y" values="10;7.5;10" dur="1.2s" repeatCount="indefinite"/>
-                </rect>
-                <rect x="24" y="18" width="3" height="24" fill="url(#signupWaveGradient)" rx="1.5">
-                  <animate attributeName="height" values="24;38;24" dur="2s" repeatCount="indefinite"/>
-                  <animate attributeName="y" values="18;11;18" dur="2s" repeatCount="indefinite"/>
-                </rect>
-                <rect x="32" y="12" width="3" height="36" fill="url(#signupWaveGradient)" rx="1.5">
-                  <animate attributeName="height" values="36;42;36" dur="1.6s" repeatCount="indefinite"/>
-                  <animate attributeName="y" values="12;9;12" dur="1.6s" repeatCount="indefinite"/>
-                </rect>
-                
-                <path d="M45 25 L55 20 L53 22 L58 22 L58 28 L53 28 L55 30 Z" fill="url(#signupWaveGradient)" opacity="0.8">
-                  <animate attributeName="opacity" values="0.8;1;0.8" dur="2s" repeatCount="indefinite"/>
-                </path>
-                <path d="M45 35 L55 30 L53 32 L58 32 L58 38 L53 38 L55 40 Z" fill="url(#signupWaveGradient)" opacity="0.6">
-                  <animate attributeName="opacity" values="0.6;1;0.6" dur="2.5s" repeatCount="indefinite"/>
-                </path>
-              </g>
-              
-              {/* Company name */}
-              <text x="100" y="60" fontFamily="Arial, sans-serif" fontWeight="bold" fontSize="20" fill="url(#signupWaveGradient)">RDISTRO</text>
-              <text x="100" y="76" fontFamily="Arial, sans-serif" fontWeight="300" fontSize="12" fill="#6b7280" letterSpacing="2px">MUSIC DISTRIBUTION</text>
-              
-              {/* Subtle connecting dots */}
-              <circle cx="75" cy="30" r="2" fill="#8b5cf6" opacity="0.6">
-                <animate attributeName="opacity" values="0.6;1;0.6" dur="3s" repeatCount="indefinite"/>
-              </circle>
-              <circle cx="80" cy="45" r="1.5" fill="#ec4899" opacity="0.4">
-                <animate attributeName="opacity" values="0.4;0.8;0.4" dur="2.8s" repeatCount="indefinite"/>
-              </circle>
-              <circle cx="85" cy="35" r="1" fill="#6366f1" opacity="0.5">
-                <animate attributeName="opacity" values="0.5;0.9;0.5" dur="2.2s" repeatCount="indefinite"/>
-              </circle>
-            </svg>
-          </Link>
-          <Link 
+      <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-200/80">
+        <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+          <AnimatedBrandLogo gradientId="signupWaveGradient" className="h-9 w-auto" />
+          <Link
             href="https://portal.rdistro.net"
             className="text-sm text-gray-600 hover:text-black transition-colors"
           >
-            Already have an account? <span className="font-medium text-primary">Login</span>
+            Already have an account? <span className="font-semibold text-black">Login</span>
           </Link>
         </div>
       </header>
 
-      {/* Main */}
-      <div className="px-4 py-4 md:py-8">
-        <div className="max-w-xl mx-auto">
-          {/* Title */}
+      <div className="px-4 py-8 md:py-12">
+        <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-[1fr,440px] gap-10 lg:gap-14 items-start">
+          {/* Left panel — desktop */}
           <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center mb-4 md:mb-6"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="hidden lg:block pt-4 sticky top-28"
           >
-            <h1 className="text-xl md:text-2xl font-bold text-[var(--text)]">
-              Get Started
-            </h1>
-            <p className="text-sm text-[var(--text-muted)]">
-              Distribute your music worldwide
+            <p className="text-sm font-semibold uppercase tracking-widest text-violet-600 mb-4">
+              Get started
             </p>
+            <h1 className="text-3xl xl:text-4xl font-bold text-black leading-tight mb-4 tracking-tight">
+              Distribute your music to{' '}
+              <span className="bg-gradient-to-r from-violet-600 to-cyan-600 bg-clip-text text-transparent">
+                150+ platforms
+              </span>
+            </h1>
+            <p className="text-gray-600 leading-relaxed mb-8 max-w-md">
+              Create your account in minutes. Upload releases, track analytics, and collect royalties — all from one dashboard.
+            </p>
+            <ul className="space-y-4 mb-10">
+              {[
+                { icon: '⚡', text: 'Live on stores in 24–48 hours' },
+                { icon: '🌍', text: 'Spotify, Apple Music, TikTok & more' },
+                { icon: '📊', text: 'Analytics & artist tools included' },
+              ].map((item) => (
+                <li key={item.text} className="flex items-center gap-3 text-gray-700">
+                  <span className="w-10 h-10 rounded-xl bg-white border border-gray-200 flex items-center justify-center text-lg shadow-sm">
+                    {item.icon}
+                  </span>
+                  <span className="text-sm font-medium">{item.text}</span>
+                </li>
+              ))}
+            </ul>
+            <div className="p-5 rounded-2xl bg-white/80 border border-gray-200/80 backdrop-blur-sm shadow-sm">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gray-900 to-gray-600 flex items-center justify-center text-white text-sm font-bold">
+                  A
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-black">Alex Rivera</p>
+                  <p className="text-xs text-gray-500">Independent Artist</p>
+                </div>
+              </div>
+              <p className="text-sm text-gray-600 italic leading-relaxed">
+                &ldquo;Signed up in five minutes. My single was live on Spotify the next day.&rdquo;
+              </p>
+            </div>
           </motion.div>
 
-          {/* Progress */}
-          <div className="flex justify-center items-center gap-2 mb-4 md:mb-6">
-            {['Plan', 'Details', 'Payment'].map((label, i) => {
-              const isActive = stepIndex === i
-              const isCompleted = stepIndex > i
-              return (
-                <div key={label} className="flex items-center gap-2">
-                  <div className="flex items-center gap-1">
-                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${
-                      isActive ? 'bg-primary text-white' : 
-                      isCompleted ? 'bg-success text-white' : 
-                      'bg-[var(--surface-dark)] text-[var(--text-muted)]'
-                    }`}>
-                      {isCompleted ? '✓' : i + 1}
-                    </div>
-                    <span className={`text-xs ${isActive ? 'text-[var(--text)]' : 'text-[var(--text-muted)]'}`}>
-                      {label}
-                    </span>
-                  </div>
-                  {i < 2 && <div className={`w-4 md:w-8 h-0.5 ${isCompleted ? 'bg-success' : 'bg-[var(--border)]'}`} />}
-                </div>
-              )
-            })}
-          </div>
+          {/* Right — form */}
+          <div className="w-full max-w-xl mx-auto lg:max-w-none">
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-center lg:text-left mb-6 lg:hidden"
+            >
+              <h1 className="text-2xl font-bold text-black mb-1">Get Started</h1>
+              <p className="text-sm text-gray-500">Distribute your music worldwide</p>
+            </motion.div>
 
-          {/* Card */}
-          <motion.div layout className="card overflow-hidden">
+            {/* Progress */}
+            <div className="flex justify-center lg:justify-start items-center gap-1 mb-6">
+              {stepLabels.map((label, i) => {
+                const currentIndex = step === 'plan' ? 0 : step === 'details' ? 1 : 2
+                const isActive = currentIndex === i
+                const isCompleted = currentIndex > i
+                return (
+                  <div key={label} className="flex items-center">
+                    <div className="flex items-center gap-2">
+                      <div
+                        className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold transition-colors ${
+                          isActive
+                            ? 'bg-black text-white'
+                            : isCompleted
+                              ? 'bg-green-500 text-white'
+                              : 'bg-gray-200 text-gray-500'
+                        }`}
+                      >
+                        {isCompleted ? '✓' : i + 1}
+                      </div>
+                      <span
+                        className={`text-xs font-medium hidden sm:inline ${
+                          isActive ? 'text-black' : 'text-gray-400'
+                        }`}
+                      >
+                        {label}
+                      </span>
+                    </div>
+                    {i < stepLabels.length - 1 && (
+                      <div
+                        className={`w-6 sm:w-10 h-0.5 mx-1 sm:mx-2 rounded-full ${
+                          isCompleted ? 'bg-green-500' : 'bg-gray-200'
+                        }`}
+                      />
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+
+            <motion.div
+              layout
+              className="bg-white/90 backdrop-blur-sm border border-gray-200/80 rounded-2xl shadow-xl shadow-black/5 overflow-hidden"
+            >
             <AnimatePresence mode="wait">
               {/* Plan Selection */}
               {step === 'plan' && (
@@ -359,16 +375,16 @@ export default function SignupClient({ plans: initialPlans, trialEnabled }: Sign
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
-                  className="p-4 md:p-6"
+                  className="p-5 md:p-7"
                 >
-                  <h2 className="text-lg font-bold text-[var(--text)] text-center mb-4">Choose Plan</h2>
+                  <h2 className="text-lg font-bold text-black text-center mb-5">Choose your plan</h2>
 
                   {trialEnabled && (
-                    <div className="mb-4 p-3 rounded-xl bg-gradient-to-r from-primary/10 to-secondary/10 border border-primary/20">
+                    <div className="mb-5 p-4 rounded-xl bg-gradient-to-r from-violet-50 to-cyan-50 border border-violet-200/60">
                       <label className="flex items-center justify-between cursor-pointer gap-3">
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm text-[var(--text)]">🎁 1 Month Free Trial</p>
-                          <p className="text-[10px] text-[var(--text-muted)]">Label plan only • Auto-charges after 30 days</p>
+                          <p className="font-semibold text-sm text-black">🎁 1 Month Free Trial</p>
+                          <p className="text-xs text-gray-500 mt-0.5">Label plan only · Auto-charges after 30 days</p>
                         </div>
                         <div className="relative flex-shrink-0">
                           <input
@@ -377,7 +393,7 @@ export default function SignupClient({ plans: initialPlans, trialEnabled }: Sign
                             onChange={(e) => handleFreeTrialToggle(e.target.checked)}
                             className="sr-only"
                           />
-                          <div className={`w-11 h-6 rounded-full transition-colors ${freeTrial ? 'bg-primary' : 'bg-gray-300'}`}>
+                          <div className={`w-11 h-6 rounded-full transition-colors ${freeTrial ? 'bg-black' : 'bg-gray-300'}`}>
                             <div className={`w-5 h-5 bg-white rounded-full shadow transform transition-transform mt-0.5 ${freeTrial ? 'translate-x-5 ml-0.5' : 'translate-x-0.5'}`} />
                           </div>
                         </div>
@@ -385,66 +401,100 @@ export default function SignupClient({ plans: initialPlans, trialEnabled }: Sign
                     </div>
                   )}
 
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {(Object.keys(plans) as Plan[]).map((planKey) => {
                       const plan = plans[planKey]
                       const isSelected = formData.plan === planKey
                       const isDisabled = freeTrial && planKey === 'artist'
-                      
+                      const isLabel = planKey === 'label'
+
                       return (
                         <div
                           key={planKey}
                           onClick={() => !isDisabled && handlePlanSelect(planKey)}
-                          className={`plan-card p-4 ${isSelected ? 'selected' : ''} ${isDisabled ? 'opacity-40 cursor-not-allowed' : ''}`}
+                          className={`relative rounded-2xl p-5 cursor-pointer transition-all duration-300 border-2 ${
+                            isDisabled ? 'opacity-40 cursor-not-allowed' : 'hover:-translate-y-0.5 hover:shadow-lg'
+                          } ${
+                            isSelected
+                              ? isLabel
+                                ? 'bg-black text-white border-black shadow-xl'
+                                : 'bg-white border-black shadow-lg'
+                              : isLabel
+                                ? 'bg-gray-50 border-gray-200 hover:border-gray-400'
+                                : 'bg-white border-gray-200 hover:border-gray-400'
+                          }`}
                         >
-                          {plan.popular && (
-                            <span className="absolute -top-2 left-3 badge-popular px-2 py-0.5 text-[10px] rounded-full">
-                              Popular
+                          {plan.popular && isLabel && (
+                            <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-gradient-to-r from-violet-500 to-cyan-500 text-white px-3 py-0.5 text-[10px] rounded-full font-semibold whitespace-nowrap">
+                              Most Popular
                             </span>
                           )}
-                          
+
                           {freeTrial && planKey === 'label' && (
-                            <span className="absolute -top-2 right-3 bg-success text-white px-2 py-0.5 text-[10px] rounded-full font-medium">
+                            <span className="absolute -top-2.5 right-3 bg-green-500 text-white px-2 py-0.5 text-[10px] rounded-full font-medium">
                               Free Trial
                             </span>
                           )}
-                          
-                          <div className="absolute top-3 right-3">
-                            <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
-                              isSelected ? 'border-primary bg-primary' : 'border-[var(--border)]'
-                            } ${isDisabled ? 'opacity-50' : ''}`}>
-                              {isSelected && <span className="text-white text-[8px]">✓</span>}
+
+                          <div className="absolute top-4 right-4">
+                            <div
+                              className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                                isSelected
+                                  ? isLabel
+                                    ? 'border-white bg-white'
+                                    : 'border-black bg-black'
+                                  : 'border-gray-300'
+                              }`}
+                            >
+                              {isSelected && (
+                                <span className={`text-[9px] font-bold ${isLabel ? 'text-black' : 'text-white'}`}>✓</span>
+                              )}
                             </div>
                           </div>
 
-                          <div className="text-2xl mb-2">{plan.icon}</div>
-                          <h3 className="font-bold text-[var(--text)]">{plan.name}</h3>
-                          <p className="text-[10px] text-[var(--text-muted)] mb-2">{plan.description}</p>
-                          
-                          <div className="mb-3">
+                          <div className="text-3xl mb-3">{plan.icon}</div>
+                          <h3 className={`font-bold text-lg ${isSelected && isLabel ? 'text-white' : 'text-black'}`}>
+                            {plan.name}
+                          </h3>
+                          <p className={`text-xs mb-3 ${isSelected && isLabel ? 'text-gray-300' : 'text-gray-500'}`}>
+                            {plan.description}
+                          </p>
+
+                          <div className="mb-4">
                             {freeTrial && planKey === 'label' ? (
                               <>
-                                <span className="text-2xl font-bold text-success">$0</span>
-                                <span className="text-xs text-[var(--text-muted)]"> first month</span>
-                                <p className="text-[10px] text-[var(--text-muted)]">then ${plan.price}/year</p>
+                                <span className="text-2xl font-bold text-green-400">$0</span>
+                                <span className={`text-xs ${isSelected && isLabel ? 'text-gray-300' : 'text-gray-500'}`}> first month</span>
+                                <p className={`text-xs mt-0.5 ${isSelected && isLabel ? 'text-gray-400' : 'text-gray-500'}`}>
+                                  then ${plan.price}/year
+                                </p>
                               </>
                             ) : plan.price === 0 ? (
                               <>
-                                <span className="text-2xl font-bold text-success">Free</span>
-                                <span className="text-xs text-[var(--text-muted)]"> /{plan.period}</span>
+                                <span className="text-2xl font-bold text-green-600">Free</span>
+                                <span className="text-xs text-gray-500"> /{plan.period}</span>
                               </>
                             ) : (
                               <>
-                                <span className="text-2xl font-bold text-[var(--text)]">${plan.price}</span>
-                                <span className="text-xs text-[var(--text-muted)]">/{plan.period}</span>
+                                <span className={`text-2xl font-bold ${isSelected && isLabel ? 'text-white' : 'text-black'}`}>
+                                  ${plan.price}
+                                </span>
+                                <span className={`text-xs ${isSelected && isLabel ? 'text-gray-300' : 'text-gray-500'}`}>
+                                  /{plan.period}
+                                </span>
                               </>
                             )}
                           </div>
 
-                          <ul className="space-y-1">
+                          <ul className="space-y-1.5">
                             {plan.features.slice(0, 4).map((f, i) => (
-                              <li key={i} className="flex items-center gap-1.5 text-[10px] text-[var(--text-muted)]">
-                                <span className="text-success text-[8px]">✓</span>
+                              <li
+                                key={i}
+                                className={`flex items-center gap-1.5 text-xs ${
+                                  isSelected && isLabel ? 'text-gray-300' : 'text-gray-500'
+                                }`}
+                              >
+                                <span className={isSelected && isLabel ? 'text-green-400' : 'text-green-500'}>✓</span>
                                 {f}
                               </li>
                             ))}
@@ -457,7 +507,7 @@ export default function SignupClient({ plans: initialPlans, trialEnabled }: Sign
                   <button
                     onClick={goToDetails}
                     disabled={!formData.plan}
-                    className="btn-primary w-full mt-4"
+                    className="w-full mt-6 py-3.5 rounded-xl font-semibold bg-black text-white hover:bg-gray-800 transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-black"
                   >
                     Continue
                   </button>
@@ -471,21 +521,21 @@ export default function SignupClient({ plans: initialPlans, trialEnabled }: Sign
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
-                  className="p-4 md:p-6"
+                  className="p-5 md:p-7"
                 >
                   <button
                     onClick={() => setStep('plan')}
-                    className="flex items-center gap-1 text-xs text-[var(--text-muted)] hover:text-[var(--text)] mb-3"
+                    className="flex items-center gap-1 text-xs text-gray-500 hover:text-black mb-4 transition-colors"
                   >
-                    ← Back
+                    ← Back to plans
                   </button>
 
-                  <h2 className="text-lg font-bold text-[var(--text)] mb-4">Your Details</h2>
+                  <h2 className="text-lg font-bold text-black mb-5">Your details</h2>
 
                   {formData.freeTrial && (
-                    <div className="mb-4 p-3 rounded-xl bg-success/10 border border-success/20">
-                      <p className="text-sm font-medium text-success">🎁 1 Month Free Trial</p>
-                      <p className="text-[10px] text-success/80">
+                    <div className="mb-5 p-4 rounded-xl bg-green-50 border border-green-200">
+                      <p className="text-sm font-semibold text-green-700">🎁 1 Month Free Trial</p>
+                      <p className="text-xs text-green-600 mt-0.5">
                         Your card will be charged ${plans.label.price}/year after 30 days
                       </p>
                     </div>
@@ -619,21 +669,23 @@ export default function SignupClient({ plans: initialPlans, trialEnabled }: Sign
                   </div>
 
                   {error && (
-                    <div className="mt-3 p-2.5 rounded-lg bg-error/10 border border-error/20 text-error text-xs">
+                    <div className="mt-4 p-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-xs">
                       ⚠ {error}
                     </div>
                   )}
 
-                  <div className="mt-4 pt-3 border-t border-[var(--border)] flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg">{formData.plan && plans[formData.plan].icon}</span>
-                      <div>
-                        <p className="text-sm font-medium text-[var(--text)]">{formData.plan && plans[formData.plan].name}</p>
-                        <p className="text-xs text-[var(--text-muted)]">
+                  <div className="mt-6 pt-5 border-t border-gray-200 flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className="text-2xl shrink-0">{formData.plan && plans[formData.plan].icon}</span>
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-black truncate">
+                          {formData.plan && plans[formData.plan].name}
+                        </p>
+                        <p className="text-xs text-gray-500">
                           {formData.freeTrial
                             ? '$0 first month'
-                            : (formData.plan === 'artist' && !plans.artist.requiresPayment)
-                              ? 'Free • no credit card'
+                            : formData.plan === 'artist' && !plans.artist.requiresPayment
+                              ? 'Free · no credit card'
                               : `$${formData.plan && plans[formData.plan].price}/yr`}
                         </p>
                       </div>
@@ -641,9 +693,13 @@ export default function SignupClient({ plans: initialPlans, trialEnabled }: Sign
                     <button
                       onClick={goToPayment}
                       disabled={!isDetailsValid() || isLoading}
-                      className="btn-primary px-6"
+                      className="shrink-0 px-6 py-3 rounded-xl font-semibold bg-black text-white hover:bg-gray-800 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                     >
-                      {isLoading ? '...' : 'Continue'}
+                      {isLoading
+                        ? '...'
+                        : isFreeArtistFlow
+                          ? 'Complete Signup'
+                          : 'Continue'}
                     </button>
                   </div>
                 </motion.div>
@@ -656,46 +712,48 @@ export default function SignupClient({ plans: initialPlans, trialEnabled }: Sign
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
-                  className="p-4 md:p-6"
+                  className="p-5 md:p-7"
                 >
                   <button
                     onClick={() => setStep('details')}
-                    className="flex items-center gap-1 text-xs text-[var(--text-muted)] hover:text-[var(--text)] mb-3"
+                    className="flex items-center gap-1 text-xs text-gray-500 hover:text-black mb-4 transition-colors"
                   >
-                    ← Back
+                    ← Back to details
                   </button>
 
-                  <h2 className="text-lg font-bold text-[var(--text)] mb-4">
-                    {formData.freeTrial ? 'Start Free Trial' : 'Payment'}
+                  <h2 className="text-lg font-bold text-black mb-5">
+                    {formData.freeTrial ? 'Start free trial' : 'Payment'}
                   </h2>
 
                   {formData.freeTrial && (
-                    <div className="mb-4 p-3 rounded-xl bg-success/10 border border-success/20">
-                      <p className="text-sm font-medium text-success">🎁 1 Month Free Trial</p>
-                      <p className="text-[10px] text-success/80">
-                        You won&apos;t be charged today. Card will be charged ${plans.label.price} after 30 days.
+                    <div className="mb-5 p-4 rounded-xl bg-green-50 border border-green-200">
+                      <p className="text-sm font-semibold text-green-700">🎁 1 Month Free Trial</p>
+                      <p className="text-xs text-green-600 mt-0.5">
+                        You won&apos;t be charged today. Card charged ${plans.label.price} after 30 days.
                       </p>
                     </div>
                   )}
 
-                  <div className="mb-4 p-3 rounded-xl bg-[var(--surface)] flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xl">{formData.plan && plans[formData.plan].icon}</span>
+                  <div className="mb-5 p-4 rounded-xl bg-gray-50 border border-gray-200 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">{formData.plan && plans[formData.plan].icon}</span>
                       <div>
-                        <p className="text-sm font-medium text-[var(--text)]">{formData.plan && plans[formData.plan].name}</p>
-                        <p className="text-xs text-[var(--text-muted)]">
-                          {formData.freeTrial ? '30-day free trial' : 'Annual'}
+                        <p className="text-sm font-semibold text-black">{formData.plan && plans[formData.plan].name}</p>
+                        <p className="text-xs text-gray-500">
+                          {formData.freeTrial ? '30-day free trial' : 'Annual subscription'}
                         </p>
                       </div>
                     </div>
                     <div className="text-right">
                       {formData.freeTrial ? (
                         <>
-                          <p className="text-xl font-bold text-success">$0</p>
-                          <p className="text-[10px] text-[var(--text-muted)]">today</p>
+                          <p className="text-2xl font-bold text-green-600">$0</p>
+                          <p className="text-xs text-gray-500">today</p>
                         </>
                       ) : (
-                        <p className="text-xl font-bold text-[var(--text)]">${formData.plan && plans[formData.plan].price}</p>
+                        <p className="text-2xl font-bold text-black">
+                          ${formData.plan && plans[formData.plan].price}
+                        </p>
                       )}
                     </div>
                   </div>
@@ -707,8 +765,8 @@ export default function SignupClient({ plans: initialPlans, trialEnabled }: Sign
                       appearance: {
                         theme: 'stripe',
                         variables: {
-                          colorPrimary: '#7c3aed',
-                          borderRadius: '10px',
+                          colorPrimary: '#000000',
+                          borderRadius: '12px',
                           fontFamily: 'Inter, sans-serif',
                         },
                       },
@@ -730,21 +788,27 @@ export default function SignupClient({ plans: initialPlans, trialEnabled }: Sign
                   key="payment-error"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  className="p-6 text-center"
+                  className="p-7 text-center"
                 >
-                  <p className="text-error mb-4">Payment initialization failed</p>
-                  <button onClick={() => setStep('details')} className="btn-secondary">
+                  <p className="text-red-600 mb-4">Payment initialization failed</p>
+                  <button
+                    onClick={() => setStep('details')}
+                    className="px-5 py-2.5 rounded-xl border border-gray-300 text-gray-700 font-medium hover:border-black hover:text-black transition-colors"
+                  >
                     Go Back
                   </button>
                 </motion.div>
               )}
             </AnimatePresence>
-          </motion.div>
+            </motion.div>
 
-          {/* Footer */}
-          <p className="text-center text-[10px] text-[var(--text-muted)] mt-4">
-            By continuing, you agree to our Terms & Privacy Policy
-          </p>
+            <p className="text-center lg:text-left text-xs text-gray-400 mt-5">
+              By continuing, you agree to our{' '}
+              <Link href="#" className="underline hover:text-gray-600">Terms</Link>
+              {' & '}
+              <Link href="#" className="underline hover:text-gray-600">Privacy Policy</Link>
+            </p>
+          </div>
         </div>
       </div>
     </div>

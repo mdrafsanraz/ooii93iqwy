@@ -511,7 +511,7 @@ export default function AdminPage() {
     return (
       <div className="min-h-screen bg-[var(--surface)] flex items-center justify-center p-4">
         <div className="text-center">
-          <Logo className="w-10 h-10 mx-auto mb-2 animate-pulse" />
+          <Logo className="h-10 w-auto mx-auto mb-2 animate-pulse" />
           <p className="text-sm text-[var(--text-muted)]">Loading...</p>
         </div>
       </div>
@@ -523,7 +523,7 @@ export default function AdminPage() {
       <div className="min-h-screen bg-[var(--surface)] flex items-center justify-center p-4">
         <div className="card p-5 w-full max-w-xs">
           <div className="flex items-center justify-center gap-2 mb-4">
-            <Logo className="w-8 h-8" />
+            <Logo className="h-8 w-auto" />
             <span className="font-bold text-[var(--text)]">Admin</span>
           </div>
           <form onSubmit={handleLogin}>
@@ -580,7 +580,7 @@ export default function AdminPage() {
       <header className="bg-white border-b border-[var(--border)] sticky top-0 z-50">
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Logo className="w-7 h-7" />
+            <Logo className="h-7 w-auto" />
             <span className="font-bold text-[var(--text)]">RDistro</span>
             <span className="badge text-[10px]">Admin</span>
           </div>
