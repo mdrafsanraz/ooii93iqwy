@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAllPlans, setActivePlan, updatePlanStripePrice } from '@/lib/plans'
+import { revalidatePublicPlansCache } from '@/lib/publicPlans'
 import { getStripePriceIdForPlan } from '@/lib/stripePlans'
 
 export const dynamic = 'force-dynamic'
@@ -58,6 +59,7 @@ export async function PATCH(request: NextRequest) {
         if (!plan) {
           return NextResponse.json({ error: 'Plan not found' }, { status: 404 })
         }
+        revalidatePublicPlansCache()
         return NextResponse.json({ success: true, plan })
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Invalid Stripe Price ID'
@@ -87,6 +89,7 @@ export async function PATCH(request: NextRequest) {
       }
 
       const refreshed = (await getAllPlans()).find((p) => p.id === plan.id) || plan
+      revalidatePublicPlansCache()
       return NextResponse.json({ success: true, plan: refreshed })
     }
 

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getDatabase } from '@/lib/mongodb'
+import { revalidatePublicPlansCache } from '@/lib/publicPlans'
 
 const SETTINGS_COLLECTION = 'settings'
 const SETTINGS_DOC_ID = 'app_settings'
@@ -76,7 +77,11 @@ export async function PATCH(request: NextRequest) {
     )
     
     console.log('Settings updated:', updates)
-    
+
+    if ('trialEnabled' in updates || 'activeArtistPlanSlug' in updates || 'activeLabelPlanSlug' in updates) {
+      revalidatePublicPlansCache()
+    }
+
     return NextResponse.json({ success: true, settings: updates })
   } catch (error) {
     console.error('Settings PATCH error:', error)

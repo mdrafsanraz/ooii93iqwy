@@ -1,5 +1,8 @@
-import { getActivePlans, ensurePresetPlans, type Plan } from './plans'
+import { unstable_cache, revalidateTag } from 'next/cache'
 import { getDatabase } from './mongodb'
+import type { Plan } from './plans'
+
+export const PUBLIC_PLANS_CACHE_TAG = 'public-plans'
 
 export interface WebsitePlan {
   type: 'artist' | 'label'
@@ -70,25 +73,42 @@ function toWebsitePlan(plan: Plan): WebsitePlan {
   }
 }
 
+async function fetchPublicPlansFromDb(): Promise<{
+  plans: WebsitePlan[]
+  trialEnabled: boolean
+}> {
+  const db = await getDatabase()
+  const settings = await db.collection('settings').findOne({ settingsId: 'app_settings' })
+  const artistSlug = settings?.activeArtistPlanSlug || 'artist_free'
+  const labelSlug = settings?.activeLabelPlanSlug || 'label_20'
+  const trialEnabled = settings?.trialEnabled ?? true
+
+  const dbPlans = await db
+    .collection<Plan>('plans')
+    .find({ slug: { $in: [artistSlug, labelSlug] } })
+    .sort({ type: 1, sortOrder: 1 })
+    .toArray()
+
+  const plans = dbPlans.length > 0 ? dbPlans.map(toWebsitePlan) : FALLBACK_PLANS
+  return { plans, trialEnabled }
+}
+
+const getCachedPublicPlans = unstable_cache(
+  fetchPublicPlansFromDb,
+  ['public-plans-v1'],
+  { tags: [PUBLIC_PLANS_CACHE_TAG], revalidate: 60 }
+)
+
+export function revalidatePublicPlansCache() {
+  revalidateTag(PUBLIC_PLANS_CACHE_TAG)
+}
+
 export async function getPublicPlansData(): Promise<{
   plans: WebsitePlan[]
   trialEnabled: boolean
 }> {
   try {
-    await ensurePresetPlans()
-    const dbPlans = await getActivePlans()
-    const plans = dbPlans.length > 0 ? dbPlans.map(toWebsitePlan) : FALLBACK_PLANS
-
-    let trialEnabled = true
-    try {
-      const db = await getDatabase()
-      const settings = await db.collection('settings').findOne({ settingsId: 'app_settings' })
-      trialEnabled = settings?.trialEnabled ?? true
-    } catch {
-      // use default
-    }
-
-    return { plans, trialEnabled }
+    return await getCachedPublicPlans()
   } catch (error) {
     console.error('getPublicPlansData error:', error)
     return { plans: FALLBACK_PLANS, trialEnabled: true }
