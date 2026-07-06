@@ -43,6 +43,7 @@ interface Stats {
 
 interface Plan {
   id: string
+  slug?: string
   type: 'artist' | 'label'
   name: string
   price: number
@@ -57,17 +58,9 @@ interface Plan {
   sortOrder: number
 }
 
-const emptyPlanForm = {
-  type: 'artist' as 'artist' | 'label',
-  name: '',
-  price: 0,
-  period: 'year',
-  description: '',
-  features: '',
-  icon: '🎤',
-  popular: false,
-  requiresPayment: false,
-  royaltyPercent: 80,
+function planPriceLabel(plan: Plan) {
+  if (plan.price === 0) return 'Free'
+  return `$${plan.price}/yr`
 }
 
 export default function AdminPage() {
@@ -87,8 +80,6 @@ export default function AdminPage() {
   const [savingSettings, setSavingSettings] = useState(false)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [plans, setPlans] = useState<Plan[]>([])
-  const [showPlanForm, setShowPlanForm] = useState(false)
-  const [planForm, setPlanForm] = useState(emptyPlanForm)
   const [savingPlan, setSavingPlan] = useState(false)
 
   // Check for saved session on mount
@@ -323,60 +314,6 @@ export default function AdminPage() {
     }
   }
 
-  const createPlan = async () => {
-    const pwd = password || sessionStorage.getItem('adminPassword') || ''
-    if (!planForm.name.trim()) {
-      setError('Plan name is required')
-      return
-    }
-    setSavingPlan(true)
-    try {
-      const res = await fetch('/api/admin/plans', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Basic ${btoa(`admin:${pwd}`)}`,
-        },
-        body: JSON.stringify(planForm),
-      })
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}))
-        setError(data.error || 'Failed to create plan')
-        return
-      }
-      setPlanForm(emptyPlanForm)
-      setShowPlanForm(false)
-      await fetchPlans()
-    } catch {
-      setError('Failed to create plan')
-    } finally {
-      setSavingPlan(false)
-    }
-  }
-
-  const deletePlan = async (id: string) => {
-    if (!confirm('Delete this plan?')) return
-    const pwd = password || sessionStorage.getItem('adminPassword') || ''
-    try {
-      const res = await fetch('/api/admin/plans', {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Basic ${btoa(`admin:${pwd}`)}`,
-        },
-        body: JSON.stringify({ id }),
-      })
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}))
-        setError(data.error || 'Failed to delete plan')
-        return
-      }
-      await fetchPlans()
-    } catch {
-      setError('Failed to delete plan')
-    }
-  }
-
   const toggleTrial = async () => {
     const pwd = password || sessionStorage.getItem('adminPassword') || ''
     setSavingSettings(true)
@@ -523,6 +460,11 @@ export default function AdminPage() {
     }
   }, [isAuthenticated, fetchData, fetchSettings, fetchPlans])
 
+  const artistPlans = plans.filter((p) => p.type === 'artist').sort((a, b) => a.sortOrder - b.sortOrder)
+  const labelPlans = plans.filter((p) => p.type === 'label').sort((a, b) => a.sortOrder - b.sortOrder)
+  const activeArtistPlan = artistPlans.find((p) => p.isActive)
+  const activeLabelPlan = labelPlans.find((p) => p.isActive)
+
   if (checkingAuth) {
     return (
       <div className="min-h-screen bg-[var(--surface)] flex items-center justify-center p-4">
@@ -660,142 +602,55 @@ export default function AdminPage() {
             </p>
           </div>
 
-          <div className="card p-3 sm:p-4 sm:col-span-2">
-            <div className="flex items-center justify-between gap-3 mb-3">
-              <div>
-                <p className="text-sm font-medium text-[var(--text)]">📋 Plan Manager</p>
-                <p className="text-[10px] text-[var(--text-muted)]">
-                  Active plans are shown on the website. One active plan per type (Artist / Label).
-                </p>
-              </div>
-              <button
-                onClick={() => setShowPlanForm((v) => !v)}
-                className="btn-secondary text-xs py-1.5 px-3"
-              >
-                {showPlanForm ? 'Cancel' : '+ New Plan'}
-              </button>
-            </div>
-
-            {showPlanForm && (
-              <div className="mb-4 p-3 rounded-lg border border-[var(--border)] bg-[var(--surface)] space-y-2">
-                <div className="grid grid-cols-2 gap-2">
-                  <select
-                    value={planForm.type}
-                    onChange={(e) =>
-                      setPlanForm({
-                        ...planForm,
-                        type: e.target.value as 'artist' | 'label',
-                        icon: e.target.value === 'artist' ? '🎤' : '🏢',
-                      })
-                    }
-                    className="input-field text-xs py-2"
-                  >
-                    <option value="artist">Artist</option>
-                    <option value="label">Label</option>
-                  </select>
-                  <input
-                    value={planForm.name}
-                    onChange={(e) => setPlanForm({ ...planForm, name: e.target.value })}
-                    placeholder="Plan name"
-                    className="input-field text-xs py-2"
-                  />
-                  <input
-                    type="number"
-                    min={0}
-                    value={planForm.price}
-                    onChange={(e) =>
-                      setPlanForm({
-                        ...planForm,
-                        price: Number(e.target.value),
-                        requiresPayment: Number(e.target.value) > 0,
-                      })
-                    }
-                    placeholder="Price"
-                    className="input-field text-xs py-2"
-                  />
-                  <input
-                    type="number"
-                    min={0}
-                    max={100}
-                    value={planForm.royaltyPercent}
-                    onChange={(e) => setPlanForm({ ...planForm, royaltyPercent: Number(e.target.value) })}
-                    placeholder="Royalties %"
-                    className="input-field text-xs py-2"
-                  />
-                </div>
-                <input
-                  value={planForm.description}
-                  onChange={(e) => setPlanForm({ ...planForm, description: e.target.value })}
-                  placeholder="Short description"
-                  className="input-field text-xs py-2 w-full"
-                />
-                <textarea
-                  value={planForm.features}
-                  onChange={(e) => setPlanForm({ ...planForm, features: e.target.value })}
-                  placeholder="Features (one per line)"
-                  rows={4}
-                  className="input-field text-xs py-2 w-full"
-                />
-                <label className="flex items-center gap-2 text-xs text-[var(--text-muted)]">
-                  <input
-                    type="checkbox"
-                    checked={planForm.requiresPayment}
-                    onChange={(e) => setPlanForm({ ...planForm, requiresPayment: e.target.checked })}
-                  />
-                  Requires payment
-                </label>
-                <button onClick={createPlan} disabled={savingPlan} className="btn-primary text-xs py-2 w-full">
-                  {savingPlan ? 'Saving...' : 'Create Plan'}
+          <div className="card p-3 sm:p-4">
+            <p className="text-sm font-medium text-[var(--text)] mb-1">🎤 Artist Plan</p>
+            <p className="text-[10px] text-[var(--text-muted)] mb-3">
+              {activeArtistPlan
+                ? `Active: ${planPriceLabel(activeArtistPlan)} • ${activeArtistPlan.royaltyPercent}% royalties`
+                : 'Choose plan shown on website & signup'}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {artistPlans.map((plan) => (
+                <button
+                  key={plan.id}
+                  onClick={() => !plan.isActive && activatePlan(plan.id)}
+                  disabled={savingPlan || plan.isActive}
+                  className={`text-xs px-3 py-1.5 rounded-md transition-colors ${
+                    plan.isActive
+                      ? 'bg-success text-white'
+                      : 'bg-[var(--surface-dark)] text-[var(--text-muted)] hover:bg-primary hover:text-white'
+                  }`}
+                >
+                  {planPriceLabel(plan)}
+                  {plan.isActive ? ' ✓' : ''}
                 </button>
-              </div>
-            )}
+              ))}
+            </div>
+          </div>
 
-            <div className="space-y-2">
-              {plans.length === 0 ? (
-                <p className="text-xs text-[var(--text-muted)]">Loading plans...</p>
-              ) : (
-                plans.map((plan) => (
-                  <div
-                    key={plan.id}
-                    className={`flex items-center justify-between gap-2 p-2 rounded-lg border ${
-                      plan.isActive ? 'border-success/40 bg-success/5' : 'border-[var(--border)]'
-                    }`}
-                  >
-                    <div className="min-w-0">
-                      <p className="text-xs font-medium text-[var(--text)] truncate">
-                        {plan.icon} {plan.name}{' '}
-                        <span className="text-[var(--text-muted)]">({plan.type})</span>
-                      </p>
-                      <p className="text-[10px] text-[var(--text-muted)] truncate">
-                        ${plan.price}/{plan.period} • {plan.royaltyPercent}% royalties
-                        {plan.isActive ? ' • LIVE on website' : ''}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-1 flex-shrink-0">
-                      {!plan.isActive && (
-                        <>
-                          <button
-                            onClick={() => activatePlan(plan.id)}
-                            disabled={savingPlan}
-                            className="text-[10px] px-2 py-1 rounded-md bg-primary text-white"
-                          >
-                            Set Active
-                          </button>
-                          <button
-                            onClick={() => deletePlan(plan.id)}
-                            className="text-[10px] px-2 py-1 rounded-md bg-error/10 text-error"
-                          >
-                            Delete
-                          </button>
-                        </>
-                      )}
-                      {plan.isActive && (
-                        <span className="text-[10px] px-2 py-1 rounded-md bg-success/10 text-success">Active</span>
-                      )}
-                    </div>
-                  </div>
-                ))
-              )}
+          <div className="card p-3 sm:p-4">
+            <p className="text-sm font-medium text-[var(--text)] mb-1">🏢 Label Plan</p>
+            <p className="text-[10px] text-[var(--text-muted)] mb-3">
+              {activeLabelPlan
+                ? `Active: ${planPriceLabel(activeLabelPlan)} • shown on website & signup`
+                : 'Choose plan shown on website & signup'}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {labelPlans.map((plan) => (
+                <button
+                  key={plan.id}
+                  onClick={() => !plan.isActive && activatePlan(plan.id)}
+                  disabled={savingPlan || plan.isActive}
+                  className={`text-xs px-3 py-1.5 rounded-md transition-colors ${
+                    plan.isActive
+                      ? 'bg-success text-white'
+                      : 'bg-[var(--surface-dark)] text-[var(--text-muted)] hover:bg-primary hover:text-white'
+                  }`}
+                >
+                  {planPriceLabel(plan)}
+                  {plan.isActive ? ' ✓' : ''}
+                </button>
+              ))}
             </div>
           </div>
         </div>

@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server'
-import { getActivePlans, ensureDefaultPlans, type Plan } from '@/lib/plans'
+import { getActivePlans, ensurePresetPlans, type Plan } from '@/lib/plans'
 import { getDatabase } from '@/lib/mongodb'
 
 const FALLBACK_PLANS: Plan[] = [
   {
-    id: 'fallback_artist',
+    id: 'artist_free',
+    slug: 'artist_free',
     type: 'artist',
     name: 'Artist',
     price: 0,
@@ -21,7 +22,8 @@ const FALLBACK_PLANS: Plan[] = [
     updatedAt: '',
   },
   {
-    id: 'fallback_label',
+    id: 'label_20',
+    slug: 'label_20',
     type: 'label',
     name: 'Label',
     price: 20,
@@ -41,7 +43,7 @@ const FALLBACK_PLANS: Plan[] = [
 
 export async function GET() {
   try {
-    await ensureDefaultPlans()
+    await ensurePresetPlans()
     const plans = await getActivePlans()
 
     let trialEnabled = true

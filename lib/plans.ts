@@ -4,6 +4,7 @@ export type PlanType = 'artist' | 'label'
 
 export interface Plan {
   id: string
+  slug: string
   type: PlanType
   name: string
   price: number
@@ -24,8 +25,12 @@ export interface Plan {
 
 const PLANS_COLLECTION = 'plans'
 
-const DEFAULT_PLANS: Omit<Plan, 'id' | 'createdAt' | 'updatedAt'>[] = [
+type PresetPlan = Omit<Plan, 'createdAt' | 'updatedAt' | 'isActive'>
+
+const PRESET_PLANS: PresetPlan[] = [
   {
+    id: 'artist_free',
+    slug: 'artist_free',
     type: 'artist',
     name: 'Artist',
     price: 0,
@@ -41,17 +46,18 @@ const DEFAULT_PLANS: Omit<Plan, 'id' | 'createdAt' | 'updatedAt'>[] = [
     ],
     icon: '🎤',
     popular: true,
-    isActive: true,
     requiresPayment: false,
     royaltyPercent: 80,
     sortOrder: 0,
   },
   {
+    id: 'artist_5',
+    slug: 'artist_5',
     type: 'artist',
-    name: 'Artist Pro',
+    name: 'Artist',
     price: 5,
     period: 'year',
-    description: 'Previous paid Artist plan',
+    description: 'Paid Artist plan',
     features: [
       'Unlimited releases',
       '150+ platforms',
@@ -61,12 +67,34 @@ const DEFAULT_PLANS: Omit<Plan, 'id' | 'createdAt' | 'updatedAt'>[] = [
     ],
     icon: '🎤',
     popular: false,
-    isActive: false,
     requiresPayment: true,
     royaltyPercent: 100,
     sortOrder: 1,
   },
   {
+    id: 'artist_10',
+    slug: 'artist_10',
+    type: 'artist',
+    name: 'Artist',
+    price: 10,
+    period: 'year',
+    description: 'Paid Artist plan',
+    features: [
+      'Unlimited releases',
+      '150+ platforms',
+      '100% royalties',
+      'Basic analytics',
+      '48h release',
+    ],
+    icon: '🎤',
+    popular: false,
+    requiresPayment: true,
+    royaltyPercent: 100,
+    sortOrder: 2,
+  },
+  {
+    id: 'label_20',
+    slug: 'label_20',
     type: 'label',
     name: 'Label',
     price: 20,
@@ -81,88 +109,134 @@ const DEFAULT_PLANS: Omit<Plan, 'id' | 'createdAt' | 'updatedAt'>[] = [
     ],
     icon: '🏢',
     popular: true,
-    isActive: true,
     requiresPayment: true,
     royaltyPercent: 100,
     sortOrder: 0,
   },
+  {
+    id: 'label_50',
+    slug: 'label_50',
+    type: 'label',
+    name: 'Label',
+    price: 50,
+    period: 'year',
+    description: 'For labels & managers',
+    features: [
+      'Everything in Artist',
+      'Multi-artist management',
+      'Advanced analytics',
+      'Priority support',
+      '24h release',
+    ],
+    icon: '🏢',
+    popular: false,
+    requiresPayment: true,
+    royaltyPercent: 100,
+    sortOrder: 1,
+  },
 ]
 
-function createPlanId() {
-  return `plan_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`
-}
-
-export async function ensureDefaultPlans(): Promise<void> {
+export async function ensurePresetPlans(): Promise<void> {
   const db = await getDatabase()
-  const count = await db.collection(PLANS_COLLECTION).countDocuments()
-  if (count > 0) return
-
   const now = new Date().toISOString()
-  await db.collection(PLANS_COLLECTION).insertMany(
-    DEFAULT_PLANS.map((plan) => ({
-      ...plan,
-      id: createPlanId(),
+
+  for (const preset of PRESET_PLANS) {
+    const bySlug = await db.collection<Plan>(PLANS_COLLECTION).findOne({ slug: preset.slug })
+    if (bySlug) continue
+
+    const byPrice = await db.collection<Plan>(PLANS_COLLECTION).findOne({
+      type: preset.type,
+      price: preset.price,
+      slug: { $exists: false },
+    })
+
+    if (byPrice) {
+      await db.collection(PLANS_COLLECTION).updateOne(
+        { id: byPrice.id },
+        {
+          $set: {
+            slug: preset.slug,
+            name: preset.name,
+            description: preset.description,
+            features: preset.features,
+            requiresPayment: preset.requiresPayment,
+            royaltyPercent: preset.royaltyPercent,
+            sortOrder: preset.sortOrder,
+            updatedAt: now,
+          },
+        }
+      )
+      continue
+    }
+
+    const defaultActive = preset.slug === 'artist_free' || preset.slug === 'label_20'
+    await db.collection(PLANS_COLLECTION).insertOne({
+      ...preset,
+      isActive: defaultActive,
       createdAt: now,
       updatedAt: now,
-    }))
+    })
+  }
+
+  for (const type of ['artist', 'label'] as PlanType[]) {
+    const active = await db.collection<Plan>(PLANS_COLLECTION).findOne({
+      type,
+      isActive: true,
+      slug: { $in: PRESET_PLANS.map((p) => p.slug) },
+    })
+    if (!active) {
+      const fallbackSlug = type === 'artist' ? 'artist_free' : 'label_20'
+      await setActivePlan(fallbackSlug)
+    }
+  }
+
+  await db.collection(PLANS_COLLECTION).updateMany(
+    { slug: { $nin: PRESET_PLANS.map((p) => p.slug) } },
+    { $set: { isActive: false, updatedAt: now } }
   )
 }
 
+/** @deprecated use ensurePresetPlans */
+export async function ensureDefaultPlans(): Promise<void> {
+  return ensurePresetPlans()
+}
+
 export async function getAllPlans(): Promise<Plan[]> {
-  await ensureDefaultPlans()
+  await ensurePresetPlans()
   const db = await getDatabase()
   return db
     .collection<Plan>(PLANS_COLLECTION)
-    .find({})
-    .sort({ type: 1, sortOrder: 1, createdAt: 1 })
+    .find({ slug: { $in: PRESET_PLANS.map((p) => p.slug) } })
+    .sort({ type: 1, sortOrder: 1 })
     .toArray()
 }
 
 export async function getActivePlans(): Promise<Plan[]> {
-  await ensureDefaultPlans()
+  await ensurePresetPlans()
   const db = await getDatabase()
   return db
     .collection<Plan>(PLANS_COLLECTION)
-    .find({ isActive: true })
+    .find({ isActive: true, slug: { $in: PRESET_PLANS.map((p) => p.slug) } })
     .sort({ type: 1, sortOrder: 1 })
     .toArray()
 }
 
 export async function getActivePlan(type: PlanType): Promise<Plan | null> {
-  await ensureDefaultPlans()
+  await ensurePresetPlans()
   const db = await getDatabase()
-  return db.collection<Plan>(PLANS_COLLECTION).findOne({ type, isActive: true })
+  const presetSlugs = PRESET_PLANS.map((p) => p.slug)
+  return db.collection<Plan>(PLANS_COLLECTION).findOne({
+    type,
+    isActive: true,
+    slug: { $in: presetSlugs },
+  })
 }
 
-export async function createPlan(
-  data: Omit<Plan, 'id' | 'isActive' | 'createdAt' | 'updatedAt'>
-): Promise<Plan> {
+export async function setActivePlan(idOrSlug: string): Promise<Plan | null> {
   const db = await getDatabase()
-  const now = new Date().toISOString()
-  const plan: Plan = {
-    ...data,
-    id: createPlanId(),
-    isActive: false,
-    createdAt: now,
-    updatedAt: now,
-  }
-  await db.collection(PLANS_COLLECTION).insertOne(plan)
-  return plan
-}
-
-export async function updatePlan(id: string, updates: Partial<Plan>): Promise<Plan | null> {
-  const db = await getDatabase()
-  const { id: _id, createdAt, ...safeUpdates } = updates
-  await db.collection(PLANS_COLLECTION).updateOne(
-    { id },
-    { $set: { ...safeUpdates, updatedAt: new Date().toISOString() } }
-  )
-  return db.collection<Plan>(PLANS_COLLECTION).findOne({ id })
-}
-
-export async function setActivePlan(id: string): Promise<Plan | null> {
-  const db = await getDatabase()
-  const plan = await db.collection<Plan>(PLANS_COLLECTION).findOne({ id })
+  const plan =
+    (await db.collection<Plan>(PLANS_COLLECTION).findOne({ id: idOrSlug })) ||
+    (await db.collection<Plan>(PLANS_COLLECTION).findOne({ slug: idOrSlug }))
   if (!plan) return null
 
   await db.collection(PLANS_COLLECTION).updateMany(
@@ -170,7 +244,7 @@ export async function setActivePlan(id: string): Promise<Plan | null> {
     { $set: { isActive: false, updatedAt: new Date().toISOString() } }
   )
   await db.collection(PLANS_COLLECTION).updateOne(
-    { id },
+    { id: plan.id },
     { $set: { isActive: true, updatedAt: new Date().toISOString() } }
   )
 
@@ -189,13 +263,10 @@ export async function setActivePlan(id: string): Promise<Plan | null> {
     )
   }
 
-  return db.collection<Plan>(PLANS_COLLECTION).findOne({ id })
+  return db.collection<Plan>(PLANS_COLLECTION).findOne({ id: plan.id })
 }
 
-export async function deletePlan(id: string): Promise<boolean> {
-  const db = await getDatabase()
-  const plan = await db.collection<Plan>(PLANS_COLLECTION).findOne({ id })
-  if (!plan || plan.isActive) return false
-  const result = await db.collection(PLANS_COLLECTION).deleteOne({ id })
-  return result.deletedCount === 1
+export function getPlanPriceLabel(plan: Plan): string {
+  if (plan.price === 0) return 'Free'
+  return `$${plan.price}/yr`
 }
