@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server'
 import { getActivePlans, ensurePresetPlans, type Plan } from '@/lib/plans'
 import { getDatabase } from '@/lib/mongodb'
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 const FALLBACK_PLANS: Plan[] = [
   {
     id: 'artist_free',
@@ -41,6 +44,11 @@ const FALLBACK_PLANS: Plan[] = [
   },
 ]
 
+const NO_CACHE_HEADERS = {
+  'Cache-Control': 'no-store, no-cache, must-revalidate',
+  Pragma: 'no-cache',
+}
+
 export async function GET() {
   try {
     await ensurePresetPlans()
@@ -55,9 +63,15 @@ export async function GET() {
       // use default
     }
 
-    return NextResponse.json({ plans: plans.length > 0 ? plans : FALLBACK_PLANS, trialEnabled })
+    return NextResponse.json(
+      { plans: plans.length > 0 ? plans : FALLBACK_PLANS, trialEnabled },
+      { headers: NO_CACHE_HEADERS }
+    )
   } catch (error) {
     console.error('Plans GET error:', error)
-    return NextResponse.json({ plans: FALLBACK_PLANS, trialEnabled: true })
+    return NextResponse.json(
+      { plans: FALLBACK_PLANS, trialEnabled: true },
+      { headers: NO_CACHE_HEADERS }
+    )
   }
 }

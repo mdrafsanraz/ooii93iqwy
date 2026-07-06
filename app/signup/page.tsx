@@ -106,7 +106,7 @@ export default function SignupPage() {
 
   // Fetch active plans + trial setting on mount
   useEffect(() => {
-    fetch('/api/plans')
+    fetch('/api/plans', { cache: 'no-store' })
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data.plans) && data.plans.length > 0) {

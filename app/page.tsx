@@ -74,7 +74,7 @@ export default function HomePage() {
 
   // Fetch active plans for pricing display
   useEffect(() => {
-    fetch('/api/plans')
+    fetch('/api/plans', { cache: 'no-store' })
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data.plans)) {

@@ -24,6 +24,20 @@ export interface Plan {
 }
 
 const PLANS_COLLECTION = 'plans'
+const SETTINGS_DOC_ID = 'app_settings'
+
+async function getSettingsDoc() {
+  const db = await getDatabase()
+  return db.collection('settings').findOne({ settingsId: SETTINGS_DOC_ID })
+}
+
+async function getActiveSlugsFromSettings(): Promise<{ artist: string; label: string }> {
+  const settings = await getSettingsDoc()
+  return {
+    artist: settings?.activeArtistPlanSlug || 'artist_free',
+    label: settings?.activeLabelPlanSlug || 'label_20',
+  }
+}
 
 type PresetPlan = Omit<Plan, 'createdAt' | 'updatedAt' | 'isActive'>
 
@@ -136,6 +150,8 @@ const PRESET_PLANS: PresetPlan[] = [
   },
 ]
 
+const PRESET_SLUGS = PRESET_PLANS.map((p) => p.slug)
+
 export async function ensurePresetPlans(): Promise<void> {
   const db = await getDatabase()
   const now = new Date().toISOString()
@@ -179,11 +195,9 @@ export async function ensurePresetPlans(): Promise<void> {
   }
 
   for (const type of ['artist', 'label'] as PlanType[]) {
-    const active = await db.collection<Plan>(PLANS_COLLECTION).findOne({
-      type,
-      isActive: true,
-      slug: { $in: PRESET_PLANS.map((p) => p.slug) },
-    })
+    const slugs = await getActiveSlugsFromSettings()
+    const activeSlug = type === 'artist' ? slugs.artist : slugs.label
+    const active = await db.collection<Plan>(PLANS_COLLECTION).findOne({ slug: activeSlug })
     if (!active) {
       const fallbackSlug = type === 'artist' ? 'artist_free' : 'label_20'
       await setActivePlan(fallbackSlug)
@@ -194,6 +208,23 @@ export async function ensurePresetPlans(): Promise<void> {
     { slug: { $nin: PRESET_PLANS.map((p) => p.slug) } },
     { $set: { isActive: false, updatedAt: now } }
   )
+
+  const slugs = await getActiveSlugsFromSettings()
+  const settings = await getSettingsDoc()
+  if (!settings?.activeArtistPlanSlug || !settings?.activeLabelPlanSlug) {
+    await db.collection('settings').updateOne(
+      { settingsId: SETTINGS_DOC_ID },
+      {
+        $set: {
+          settingsId: SETTINGS_DOC_ID,
+          activeArtistPlanSlug: slugs.artist,
+          activeLabelPlanSlug: slugs.label,
+          updatedAt: now,
+        },
+      },
+      { upsert: true }
+    )
+  }
 }
 
 /** @deprecated use ensurePresetPlans */
@@ -204,32 +235,39 @@ export async function ensureDefaultPlans(): Promise<void> {
 export async function getAllPlans(): Promise<Plan[]> {
   await ensurePresetPlans()
   const db = await getDatabase()
-  return db
+  const slugs = await getActiveSlugsFromSettings()
+  const plans = await db
     .collection<Plan>(PLANS_COLLECTION)
-    .find({ slug: { $in: PRESET_PLANS.map((p) => p.slug) } })
+    .find({ slug: { $in: PRESET_SLUGS } })
     .sort({ type: 1, sortOrder: 1 })
     .toArray()
+
+  return plans.map((plan) => ({
+    ...plan,
+    isActive: plan.slug === slugs.artist || plan.slug === slugs.label,
+  }))
 }
 
 export async function getActivePlans(): Promise<Plan[]> {
   await ensurePresetPlans()
   const db = await getDatabase()
-  return db
+  const slugs = await getActiveSlugsFromSettings()
+  const plans = await db
     .collection<Plan>(PLANS_COLLECTION)
-    .find({ isActive: true, slug: { $in: PRESET_PLANS.map((p) => p.slug) } })
+    .find({ slug: { $in: [slugs.artist, slugs.label] } })
     .sort({ type: 1, sortOrder: 1 })
     .toArray()
+
+  return plans.map((plan) => ({ ...plan, isActive: true }))
 }
 
 export async function getActivePlan(type: PlanType): Promise<Plan | null> {
   await ensurePresetPlans()
   const db = await getDatabase()
-  const presetSlugs = PRESET_PLANS.map((p) => p.slug)
-  return db.collection<Plan>(PLANS_COLLECTION).findOne({
-    type,
-    isActive: true,
-    slug: { $in: presetSlugs },
-  })
+  const slugs = await getActiveSlugsFromSettings()
+  const slug = type === 'artist' ? slugs.artist : slugs.label
+  const plan = await db.collection<Plan>(PLANS_COLLECTION).findOne({ slug })
+  return plan ? { ...plan, isActive: true } : null
 }
 
 export async function setActivePlan(idOrSlug: string): Promise<Plan | null> {
@@ -240,7 +278,7 @@ export async function setActivePlan(idOrSlug: string): Promise<Plan | null> {
   if (!plan) return null
 
   await db.collection(PLANS_COLLECTION).updateMany(
-    { type: plan.type },
+    { type: plan.type, slug: { $in: PRESET_SLUGS } },
     { $set: { isActive: false, updatedAt: new Date().toISOString() } }
   )
   await db.collection(PLANS_COLLECTION).updateOne(
@@ -248,20 +286,24 @@ export async function setActivePlan(idOrSlug: string): Promise<Plan | null> {
     { $set: { isActive: true, updatedAt: new Date().toISOString() } }
   )
 
-  if (plan.type === 'artist') {
-    const artistPlanMode = plan.requiresPayment || plan.price > 0 ? 'paid' : 'free'
-    await db.collection('settings').updateOne(
-      { settingsId: 'app_settings' },
-      {
-        $set: {
-          settingsId: 'app_settings',
-          artistPlanMode,
-          updatedAt: new Date().toISOString(),
-        },
-      },
-      { upsert: true }
-    )
+  const artistPlanMode = plan.requiresPayment || plan.price > 0 ? 'paid' : 'free'
+  const settingsUpdate: Record<string, string> = {
+    settingsId: SETTINGS_DOC_ID,
+    updatedAt: new Date().toISOString(),
   }
+
+  if (plan.type === 'artist') {
+    settingsUpdate.artistPlanMode = artistPlanMode
+    settingsUpdate.activeArtistPlanSlug = plan.slug
+  } else {
+    settingsUpdate.activeLabelPlanSlug = plan.slug
+  }
+
+  await db.collection('settings').updateOne(
+    { settingsId: SETTINGS_DOC_ID },
+    { $set: settingsUpdate },
+    { upsert: true }
+  )
 
   return db.collection<Plan>(PLANS_COLLECTION).findOne({ id: plan.id })
 }

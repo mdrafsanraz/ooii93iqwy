@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAllPlans, setActivePlan, updatePlanStripePrice } from '@/lib/plans'
 import { getStripePriceIdForPlan } from '@/lib/stripePlans'
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 function isAuthorized(request: NextRequest): boolean {
   const authHeader = request.headers.get('authorization')
   const adminPassword = process.env.ADMIN_PASSWORD
