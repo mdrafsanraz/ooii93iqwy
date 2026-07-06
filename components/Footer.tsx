@@ -24,7 +24,7 @@ export default function Footer() {
       <div className="absolute inset-0 pattern-dots opacity-30" />
       
       <div className="max-w-7xl mx-auto px-4 md:px-8 py-16 md:py-20 relative">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8 md:gap-10">
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
             <Link href="/" className="inline-block group">
@@ -66,9 +66,9 @@ export default function Footer() {
             <ul className="space-y-3">
               {[
                 { label: 'Distribution', href: '/#features' },
-                { label: 'Analytics', href: '/#features' },
-                { label: 'Playlist Pitching', href: '/#features' },
-                { label: 'Artist Tools', href: '/#features' },
+                { label: 'Analytics', href: '/analytics' },
+                { label: 'Playlist Pitching', href: '/playlist-pitching' },
+                { label: 'Artist Tools', href: '/artist-tools' },
                 { label: 'Pricing', href: '/#pricing' },
               ].map((link) => (
                 <li key={link.label}>
@@ -127,6 +127,44 @@ export default function Footer() {
                 </li>
               ))}
             </ul>
+          </div>
+
+          {/* Trustpilot */}
+          <div>
+            <h4 className="font-semibold text-black mb-4 text-sm uppercase tracking-wider">Reviews</h4>
+            <a
+              href="https://www.trustpilot.com/review/rdistro.net"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block p-4 bg-white border border-gray-200 rounded-xl hover:border-[#00b67a] hover:shadow-md transition-all duration-300 group"
+            >
+              <div className="flex items-center gap-2 mb-3">
+                <svg viewBox="0 0 24 24" className="w-5 h-5" aria-hidden>
+                  <path
+                    fill="#00b67a"
+                    d="M12 0l3.09 6.26L22 7.27l-5 4.87 1.18 6.88L12 16.77l-6.18 3.25L7 12.14 2 7.27l6.91-1.01L12 0z"
+                  />
+                </svg>
+                <span className="font-semibold text-black text-sm group-hover:text-[#00b67a] transition-colors">
+                  Trustpilot
+                </span>
+              </div>
+              <div className="flex gap-0.5 mb-2">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <span
+                    key={i}
+                    className="w-6 h-6 bg-[#00b67a] flex items-center justify-center"
+                  >
+                    <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" aria-hidden>
+                      <path fill="white" d="M12 0l3.09 6.26L22 7.27l-5 4.87 1.18 6.88L12 16.77l-6.18 3.25L7 12.14 2 7.27l6.91-1.01L12 0z" />
+                    </svg>
+                  </span>
+                ))}
+              </div>
+              <p className="text-xs text-gray-500 leading-relaxed">
+                Rate & review RDistro on Trustpilot
+              </p>
+            </a>
           </div>
         </div>
 

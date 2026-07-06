@@ -215,23 +215,27 @@ export default function HomePageClient({ activePlans, trialEnabled }: HomePageCl
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
-              { icon: '🌍', title: 'Global Distribution', desc: 'Distribute to 150+ streaming platforms and digital stores worldwide including Spotify, Apple Music, Amazon, and more.' },
-              { icon: '💰', title: 'Keep 100% Rights', desc: 'You own your music, you keep your rights. We collect and pay your royalties with complete transparency.' },
-              { icon: '📊', title: 'Real-time Analytics', desc: 'Track your performance with detailed streaming data, audience insights, and revenue reports updated daily.' },
-              { icon: '⚡', title: 'Fast Release', desc: 'Get your music live on all platforms in just 24-48 hours with our streamlined submission process.' },
-              { icon: '🎯', title: 'Playlist Pitching', desc: 'Submit your tracks directly to Spotify editorial playlists and increase your chances of being discovered.' },
-              { icon: '🛠️', title: 'Artist Tools', desc: 'Access pre-save campaigns, smart links, promotional assets, and social media tools to boost your releases.' },
+              { icon: '🌍', title: 'Global Distribution', desc: 'Distribute to 150+ streaming platforms and digital stores worldwide including Spotify, Apple Music, Amazon, and more.', href: '/#features' },
+              { icon: '💰', title: 'Keep 100% Rights', desc: 'You own your music, you keep your rights. We collect and pay your royalties with complete transparency.', href: '/#features' },
+              { icon: '📊', title: 'Real-time Analytics', desc: 'Track your performance with detailed streaming data, audience insights, and revenue reports updated daily.', href: '/analytics' },
+              { icon: '⚡', title: 'Fast Release', desc: 'Get your music live on all platforms in just 24-48 hours with our streamlined submission process.', href: '/#features' },
+              { icon: '🎯', title: 'Playlist Pitching', desc: 'Submit your tracks for editorial playlist consideration and increase your chances of being discovered.', href: '/playlist-pitching' },
+              { icon: '🛠️', title: 'Artist Tools', desc: 'Access pre-save campaigns, smart links, promotional assets, and social media tools to boost your releases.', href: '/artist-tools' },
             ].map((feature, i) => (
-              <div 
+              <Link
                 key={i}
-                className="p-6 bg-white/80 backdrop-blur-sm border border-gray-200/80 rounded-xl hover:border-gray-300 hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
+                href={feature.href}
+                className="block p-6 bg-white/80 backdrop-blur-sm border border-gray-200/80 rounded-xl hover:border-gray-300 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group"
               >
-                <div className="w-12 h-12 bg-gray-100/80 rounded-lg flex items-center justify-center text-2xl mb-4 transition-transform hover:scale-110 hover:rotate-3">
+                <div className="w-12 h-12 bg-gray-100/80 rounded-lg flex items-center justify-center text-2xl mb-4 transition-transform group-hover:scale-110 group-hover:rotate-3">
                   {feature.icon}
                 </div>
-                <h3 className="text-lg font-semibold text-black mb-2">{feature.title}</h3>
+                <h3 className="text-lg font-semibold text-black mb-2 group-hover:text-gray-800">{feature.title}</h3>
                 <p className="text-gray-600 text-sm leading-relaxed">{feature.desc}</p>
-              </div>
+                <span className="inline-flex items-center gap-1 mt-3 text-sm font-medium text-black opacity-0 group-hover:opacity-100 transition-opacity">
+                  Learn more <span className="group-hover:translate-x-1 transition-transform">→</span>
+                </span>
+              </Link>
             ))}
           </div>
         </div>
