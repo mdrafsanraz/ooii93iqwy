@@ -185,7 +185,7 @@ export default function HomePageClient({ activePlans, trialEnabled }: HomePageCl
             >
               Distribute to Spotify, Apple Music, and 150+ stores.
               {artistPlan && !artistPlan.requiresPayment
-                ? ` Start free and keep up to ${artistPlan.royaltyPercent}% of your royalties.`
+                ? ` Start Free and keep up to 100% of your royalties.`
                 : ' Keep 100% of your rights and royalties.'}
             </motion.p>
 
