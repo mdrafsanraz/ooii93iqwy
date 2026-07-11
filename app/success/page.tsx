@@ -9,8 +9,25 @@ import Footer from '@/components/Footer'
 function SuccessContent() {
   const searchParams = useSearchParams()
   const isTrial = searchParams.get('trial') === 'true'
+  const isFreeArtist = searchParams.get('free_artist') === 'true'
   const transactionId = searchParams.get('txn_id') || searchParams.get('setup_intent') || searchParams.get('payment_intent')
   const [confetti, setConfetti] = useState(true)
+
+  const headline = isFreeArtist
+    ? 'Request Received'
+    : isTrial
+      ? 'Welcome to RDistro!'
+      : 'Payment Successful!'
+
+  const subheadline = isFreeArtist
+    ? 'Thank you for submitting your Artist registration.'
+    : isTrial
+      ? 'Your free trial has been activated.'
+      : 'Thank you for subscribing to RDistro.'
+
+  const detail = isFreeArtist
+    ? 'Our team is reviewing your application. You will receive an update by email within 24 hours, provided your information is correct.'
+    : 'You will receive your platform invite within 24 hours, provided your information is correct.'
 
   useEffect(() => {
     const timer = setTimeout(() => setConfetti(false), 5000)
@@ -72,16 +89,14 @@ function SuccessContent() {
           </div>
           
           <h1 className="text-4xl md:text-5xl font-bold text-black mb-4">
-            {isTrial ? 'Welcome to RDistro!' : 'Payment Successful!'}
+            {headline}
           </h1>
           
           <p className="text-xl text-gray-600 mb-2">
-            {isTrial 
-              ? 'Your free trial has been activated.' 
-              : 'Thank you for subscribing to RDistro.'}
+            {subheadline}
           </p>
           <p className="text-base text-gray-600 max-w-xl mx-auto">
-            You will receive your platform invite within <strong className="text-gray-900">24 hours</strong>, provided your information is correct.
+            {detail}
           </p>
         </div>
 
@@ -97,9 +112,9 @@ function SuccessContent() {
           </div>
           
           <p className="text-gray-600 mb-6">
-            We&apos;ve sent you a confirmation email with your account details and next steps. 
-            Please check your inbox (and spam folder) for instructions on how to get started.
-            If your details are correct, your invite will arrive within 24 hours.
+            {isFreeArtist
+              ? 'We’ve sent a confirmation email. Please check your inbox and spam folder. Once your registration is approved, you’ll receive your platform invite.'
+              : 'We’ve sent you a confirmation email with your account details and next steps. Please check your inbox (and spam folder) for instructions on how to get started. If your details are correct, your invite will arrive within 24 hours.'}
           </p>
 
           <div className="bg-gray-50 rounded-xl p-6 text-left">
@@ -107,19 +122,35 @@ function SuccessContent() {
             <ul className="space-y-3">
               <li className="flex items-start gap-3">
                 <span className="w-6 h-6 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-sm font-medium flex-shrink-0">1</span>
-                <span className="text-gray-600">Within 24 hours: check your email for your platform invite (if your information is correct)</span>
+                <span className="text-gray-600">
+                  {isFreeArtist
+                    ? 'Our team reviews your registration'
+                    : 'Within 24 hours: check your email for your platform invite (if your information is correct)'}
+                </span>
               </li>
               <li className="flex items-start gap-3">
                 <span className="w-6 h-6 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-sm font-medium flex-shrink-0">2</span>
-                <span className="text-gray-600">Log in to your artist portal</span>
+                <span className="text-gray-600">
+                  {isFreeArtist
+                    ? 'You’ll receive an email update (please also check spam / junk)'
+                    : 'Log in to your artist portal'}
+                </span>
               </li>
               <li className="flex items-start gap-3">
                 <span className="w-6 h-6 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-sm font-medium flex-shrink-0">3</span>
-                <span className="text-gray-600">Upload your music and artwork</span>
+                <span className="text-gray-600">
+                  {isFreeArtist
+                    ? 'After approval, use your invite to access the portal'
+                    : 'Upload your music and artwork'}
+                </span>
               </li>
               <li className="flex items-start gap-3">
                 <span className="w-6 h-6 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-sm font-medium flex-shrink-0">4</span>
-                <span className="text-gray-600">Your music goes live in 24-48 hours!</span>
+                <span className="text-gray-600">
+                  {isFreeArtist
+                    ? 'Upload your music and go live worldwide'
+                    : 'Your music goes live in 24-48 hours!'}
+                </span>
               </li>
             </ul>
           </div>
@@ -127,18 +158,24 @@ function SuccessContent() {
 
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <a
-            href="https://portal.rdistro.net"
-            className="px-8 py-4 bg-black text-white rounded-xl font-semibold hover:bg-gray-800 transition-all inline-flex items-center justify-center gap-2"
-          >
-            Go to Artist Portal
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-            </svg>
-          </a>
+          {!isFreeArtist && (
+            <a
+              href="https://portal.rdistro.net"
+              className="px-8 py-4 bg-black text-white rounded-xl font-semibold hover:bg-gray-800 transition-all inline-flex items-center justify-center gap-2"
+            >
+              Go to Artist Portal
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+              </svg>
+            </a>
+          )}
           <Link
             href="/"
-            className="px-8 py-4 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition-all"
+            className={`px-8 py-4 rounded-xl font-semibold transition-all ${
+              isFreeArtist
+                ? 'bg-black text-white hover:bg-gray-800'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
           >
             Back to Home
           </Link>
