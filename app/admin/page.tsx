@@ -469,20 +469,30 @@ export default function AdminPage() {
       alert('No pending registrations selected')
       return
     }
-    if (!confirm(`Mark ${pendingSelected.length} registration(s) as created?`)) return
+    if (!confirm(`Mark ${pendingSelected.length} registration(s) as created and send accept emails?`)) return
 
     try {
-      await Promise.all(
-        pendingSelected.map((reg) =>
-          fetch('/api/admin/registrations', {
-            method: 'PATCH',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Basic ${btoa(`admin:${password}`)}`,
-            },
-            body: JSON.stringify({ id: reg.id, accountCreated: true }),
-          })
-        )
+      const res = await fetch('/api/admin/registrations', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Basic ${btoa(`admin:${password}`)}`,
+        },
+        body: JSON.stringify({
+          action: 'bulk_mark_created',
+          ids: pendingSelected.map((reg) => reg.id),
+        }),
+      })
+
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        setError(data.error || 'Bulk mark failed')
+        return
+      }
+
+      alert(
+        data.message ||
+          `Marked ${data.marked ?? pendingSelected.length}. Emails sent: ${data.emailed ?? 0}.`
       )
       setSelectedIds(new Set())
       await fetchData()

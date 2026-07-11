@@ -18,54 +18,58 @@ function escapeHtml(text: string): string {
     .replace(/"/g, '&quot;')
 }
 
-async function sendRegistrationAcceptedEmail(to: string, name: string) {
+async function sendRegistrationAcceptedEmail(to: string, name: string): Promise<boolean> {
   if (!process.env.RESEND_API_KEY) {
     console.log('RESEND_API_KEY not set; skipping registration accepted email')
-    return
+    return false
   }
-  try {
-    const resend = new Resend(process.env.RESEND_API_KEY)
-    const firstName = escapeHtml(name.trim().split(/\s+/)[0] || 'there')
-    await resend.emails.send({
-      from: 'RDistro <registration@rdistro.net>',
-      to: [to],
-      subject: 'Your registration is accepted — RDISTRO',
-      html: brandEmailLayout({
-        title: 'Registration Accepted ✅',
-        subtitle: 'Your RDISTRO account is being prepared.',
-        bodyHtml: `
-          <p style="font-size:17px;color:#444;line-height:30px;margin:0 0 16px;">Hi ${firstName},</p>
-          <p style="font-size:17px;color:#555;line-height:30px;margin:0 0 16px;">
-            Great news — <b>your registration has been accepted</b>. Thank you for choosing <b>RDISTRO</b> for your music distribution.
-          </p>
-          ${emailCallout(
-            `You will receive a separate invite email to access the platform shortly. Please also check your <b>spam / junk</b> folder if you don’t see it right away.`
-          )}
-          ${emailCallout(
-            `If you're seeing the <b>“Something went wrong”</b> error when creating your account using the invitation link, please contact us on WhatsApp at <a href="https://wa.me/447492069504" style="color:#111827;font-weight:700;text-decoration:none;">+44 7492 069504</a>. We'll assist you directly and help resolve the issue as quickly as possible.`,
-            '#f59e0b'
-          )}
-          ${emailCallout(
-            'Once you receive your invite, you can start distributing to Spotify, Apple Music, and 150+ platforms worldwide.',
-            '#00B67A'
-          )}
-          ${emailButton('https://portal.rdistro.net', 'Open RDISTRO Portal')}
-          <p style="margin-top:40px;font-size:16px;color:#666;line-height:28px;text-align:center;">
-            Need help? WhatsApp us at <a href="https://wa.me/447492069504" style="color:#25D366;text-decoration:none;font-weight:600;">+44 7492 069504</a>
-            or email <a href="mailto:support@rdistro.net" style="color:#6366f1;text-decoration:none;">support@rdistro.net</a>
-          </p>
-          <p style="margin-top:35px;font-size:17px;color:#111827;">Welcome to the RDISTRO community.</p>
-          <p style="font-size:17px;color:#666;margin:0;">
-            With appreciation,<br />
-            <b>The RDISTRO Team</b>
-          </p>
-        `,
-      }),
-    })
-    console.log('Registration accepted email sent to:', to)
-  } catch (err) {
-    console.error('Failed to send registration accepted email:', err)
+
+  const resend = new Resend(process.env.RESEND_API_KEY)
+  const firstName = escapeHtml(name.trim().split(/\s+/)[0] || 'there')
+  const { data, error } = await resend.emails.send({
+    from: 'RDistro <registration@rdistro.net>',
+    to: [to],
+    subject: 'Your registration is accepted — RDISTRO',
+    html: brandEmailLayout({
+      title: 'Registration Accepted ✅',
+      subtitle: 'Your RDISTRO account is being prepared.',
+      bodyHtml: `
+        <p style="font-size:17px;color:#444;line-height:30px;margin:0 0 16px;">Hi ${firstName},</p>
+        <p style="font-size:17px;color:#555;line-height:30px;margin:0 0 16px;">
+          Great news — <b>your registration has been accepted</b>. Thank you for choosing <b>RDISTRO</b> for your music distribution.
+        </p>
+        ${emailCallout(
+          `You will receive a separate invite email to access the platform shortly. Please also check your <b>spam / junk</b> folder if you don’t see it right away.`
+        )}
+        ${emailCallout(
+          `If you're seeing the <b>“Something went wrong”</b> error when creating your account using the invitation link, please contact us on WhatsApp at <a href="https://wa.me/447492069504" style="color:#111827;font-weight:700;text-decoration:none;">+44 7492 069504</a>. We'll assist you directly and help resolve the issue as quickly as possible.`,
+          '#f59e0b'
+        )}
+        ${emailCallout(
+          'Once you receive your invite, you can start distributing to Spotify, Apple Music, and 150+ platforms worldwide.',
+          '#00B67A'
+        )}
+        ${emailButton('https://portal.rdistro.net', 'Open RDISTRO Portal')}
+        <p style="margin-top:40px;font-size:16px;color:#666;line-height:28px;text-align:center;">
+          Need help? WhatsApp us at <a href="https://wa.me/447492069504" style="color:#25D366;text-decoration:none;font-weight:600;">+44 7492 069504</a>
+          or email <a href="mailto:support@rdistro.net" style="color:#6366f1;text-decoration:none;">support@rdistro.net</a>
+        </p>
+        <p style="margin-top:35px;font-size:17px;color:#111827;">Welcome to the RDISTRO community.</p>
+        <p style="font-size:17px;color:#666;margin:0;">
+          With appreciation,<br />
+          <b>The RDISTRO Team</b>
+        </p>
+      `,
+    }),
+  })
+
+  if (error) {
+    console.error('Failed to send registration accepted email to:', to, error)
+    throw new Error(error.message || 'Failed to send accepted email')
   }
+
+  console.log('Registration accepted email sent to:', to, data?.id)
+  return true
 }
 
 async function sendRegistrationRejectedEmail(to: string, name: string) {
@@ -160,10 +164,23 @@ export async function PATCH(request: NextRequest) {
 
     // Email user once when admin marks registration as created (accepted)
     if (accountCreated === true && !before.accountCreated) {
-      await sendRegistrationAcceptedEmail(before.email, before.name)
+      try {
+        await sendRegistrationAcceptedEmail(before.email, before.name)
+      } catch (emailError) {
+        console.error('Accepted email failed after mark created:', emailError)
+        return NextResponse.json(
+          {
+            success: true,
+            registration: updated,
+            emailSent: false,
+            warning: 'Marked as created, but accept email failed to send',
+          },
+          { status: 200 }
+        )
+      }
     }
 
-    return NextResponse.json({ success: true, registration: updated })
+    return NextResponse.json({ success: true, registration: updated, emailSent: true })
   } catch (error) {
     console.error('Admin PATCH error:', error)
     return NextResponse.json({ error: 'Server error' }, { status: 500 })
@@ -215,7 +232,96 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
     
-    const { id, action } = await request.json()
+    const { id, action, ids } = await request.json()
+
+    if (action === 'bulk_mark_created') {
+      if (!Array.isArray(ids) || ids.length === 0) {
+        return NextResponse.json({ error: 'ids array is required' }, { status: 400 })
+      }
+
+      const results: {
+        id: string
+        email: string
+        marked: boolean
+        emailed: boolean
+        error?: string
+      }[] = []
+
+      for (const regId of ids) {
+        try {
+          const before = await getRegistrationById(regId)
+          if (!before) {
+            results.push({ id: regId, email: '', marked: false, emailed: false, error: 'Not found' })
+            continue
+          }
+
+          if (before.accountCreated) {
+            results.push({
+              id: regId,
+              email: before.email,
+              marked: true,
+              emailed: false,
+              error: 'Already created',
+            })
+            continue
+          }
+
+          const updated = await updateRegistration(regId, { accountCreated: true })
+          if (!updated) {
+            results.push({
+              id: regId,
+              email: before.email,
+              marked: false,
+              emailed: false,
+              error: 'Update failed',
+            })
+            continue
+          }
+
+          let emailed = false
+          try {
+            emailed = await sendRegistrationAcceptedEmail(before.email, before.name)
+          } catch (emailError) {
+            console.error('Bulk accept email failed for:', before.email, emailError)
+            results.push({
+              id: regId,
+              email: before.email,
+              marked: true,
+              emailed: false,
+              error: emailError instanceof Error ? emailError.message : 'Email failed',
+            })
+            // Small pause before next to reduce rate-limit pressure
+            await new Promise((r) => setTimeout(r, 400))
+            continue
+          }
+
+          results.push({ id: regId, email: before.email, marked: true, emailed })
+          // Space out Resend calls so bulk sends don't get rate-limited
+          await new Promise((r) => setTimeout(r, 400))
+        } catch (err) {
+          results.push({
+            id: regId,
+            email: '',
+            marked: false,
+            emailed: false,
+            error: err instanceof Error ? err.message : 'Unknown error',
+          })
+        }
+      }
+
+      const marked = results.filter((r) => r.marked).length
+      const emailed = results.filter((r) => r.emailed).length
+      const failedEmail = results.filter((r) => r.marked && !r.emailed && r.error !== 'Already created').length
+
+      return NextResponse.json({
+        success: true,
+        marked,
+        emailed,
+        failedEmail,
+        results,
+        message: `Marked ${marked} as created. Emails sent: ${emailed}${failedEmail ? `, failed: ${failedEmail}` : ''}.`,
+      })
+    }
     
     if (action === 'cancel_subscription') {
       const registration = await getRegistrationById(id)
