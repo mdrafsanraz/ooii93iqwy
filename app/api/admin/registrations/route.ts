@@ -3,6 +3,12 @@ import { getRegistrations, getStats, updateRegistration, deleteRegistration, get
 import Stripe from 'stripe'
 import { Resend } from 'resend'
 import { syncInviteForRegistration } from '@/lib/inviteSync'
+import {
+  brandEmailLayout,
+  emailButton,
+  emailCallout,
+  emailSignOff,
+} from '@/lib/emailLayout'
 
 function escapeHtml(text: string): string {
   return text
@@ -23,33 +29,38 @@ async function sendRegistrationAcceptedEmail(to: string, name: string) {
     await resend.emails.send({
       from: 'RDistro <registration@rdistro.net>',
       to: [to],
-      subject: 'Your registration is accepted — RDistro',
-      html: `
-        <!DOCTYPE html>
-        <html>
-        <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
-        <body style="margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;background:#f8fafc;">
-          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f8fafc;padding:32px 16px;">
-            <tr><td align="center">
-              <table role="presentation" width="100%" style="max-width:560px;background:#ffffff;border-radius:16px;border:1px solid #e2e8f0;overflow:hidden;">
-                <tr><td style="padding:32px 28px;">
-                  <p style="margin:0 0 16px;font-size:16px;color:#0f172a;line-height:1.6;">Hi ${firstName},</p>
-                  <p style="margin:0 0 16px;font-size:16px;color:#0f172a;line-height:1.6;">
-                    <strong>Your registration is accepted.</strong> You will receive an invite to access the platform—please check your email inbox and your <strong>spam / junk</strong> folder if you don’t see it right away.
-                  </p>
-                  <p style="margin:0;font-size:14px;color:#64748b;line-height:1.6;">
-                    If you need help, reply to this email or contact <a href="mailto:support@rdistro.net" style="color:#6366f1;">support@rdistro.net</a>.
-                  </p>
-                </td></tr>
-                <tr><td style="padding:16px 28px 28px;border-top:1px solid #f1f5f9;">
-                  <p style="margin:0;font-size:13px;color:#94a3b8;">— The RDistro Team</p>
-                </td></tr>
-              </table>
-            </td></tr>
-          </table>
-        </body>
-        </html>
-      `,
+      subject: 'Your registration is accepted — RDISTRO',
+      html: brandEmailLayout({
+        title: 'Registration Accepted ✅',
+        subtitle: 'Your RDISTRO account is being prepared.',
+        bodyHtml: `
+          <p style="font-size:17px;color:#444;line-height:30px;margin:0 0 16px;">Hi ${firstName},</p>
+          <p style="font-size:17px;color:#555;line-height:30px;margin:0 0 16px;">
+            Great news — <b>your registration has been accepted</b>. Thank you for choosing <b>RDISTRO</b> for your music distribution.
+          </p>
+          ${emailCallout(
+            `You will receive a separate invite email to access the platform shortly. Please also check your <b>spam / junk</b> folder if you don’t see it right away.`
+          )}
+          ${emailCallout(
+            `If you're seeing the <b>“Something went wrong”</b> error when creating your account using the invitation link, please contact us on WhatsApp at <a href="https://wa.me/447492069504" style="color:#111827;font-weight:700;text-decoration:none;">+44 7492 069504</a>. We'll assist you directly and help resolve the issue as quickly as possible.`,
+            '#f59e0b'
+          )}
+          ${emailCallout(
+            'Once you receive your invite, you can start distributing to Spotify, Apple Music, and 150+ platforms worldwide.',
+            '#00B67A'
+          )}
+          ${emailButton('https://portal.rdistro.net', 'Open RDISTRO Portal')}
+          <p style="margin-top:40px;font-size:16px;color:#666;line-height:28px;text-align:center;">
+            Need help? WhatsApp us at <a href="https://wa.me/447492069504" style="color:#25D366;text-decoration:none;font-weight:600;">+44 7492 069504</a>
+            or email <a href="mailto:support@rdistro.net" style="color:#6366f1;text-decoration:none;">support@rdistro.net</a>
+          </p>
+          <p style="margin-top:35px;font-size:17px;color:#111827;">Welcome to the RDISTRO community.</p>
+          <p style="font-size:17px;color:#666;margin:0;">
+            With appreciation,<br />
+            <b>The RDISTRO Team</b>
+          </p>
+        `,
+      }),
     })
     console.log('Registration accepted email sent to:', to)
   } catch (err) {
@@ -67,33 +78,26 @@ async function sendRegistrationRejectedEmail(to: string, name: string) {
   await resend.emails.send({
     from: 'RDistro <registration@rdistro.net>',
     to: [to],
-    subject: 'Registration update — RDistro',
-    html: `
-      <!DOCTYPE html>
-      <html>
-      <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
-      <body style="margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;background:#f8fafc;">
-        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f8fafc;padding:32px 16px;">
-          <tr><td align="center">
-            <table role="presentation" width="100%" style="max-width:560px;background:#ffffff;border-radius:16px;border:1px solid #e2e8f0;overflow:hidden;">
-              <tr><td style="padding:32px 28px;">
-                <p style="margin:0 0 16px;font-size:16px;color:#0f172a;line-height:1.6;">Hi ${firstName},</p>
-                <p style="margin:0 0 16px;font-size:16px;color:#0f172a;line-height:1.6;">
-                  We reviewed your registration and cannot approve it at this time.
-                </p>
-                <p style="margin:0;font-size:14px;color:#64748b;line-height:1.6;">
-                  Please review and correct your details, then submit again.
-                </p>
-              </td></tr>
-              <tr><td style="padding:16px 28px 28px;border-top:1px solid #f1f5f9;">
-                <p style="margin:0;font-size:13px;color:#94a3b8;">— The RDistro Team</p>
-              </td></tr>
-            </table>
-          </td></tr>
-        </table>
-      </body>
-      </html>
-    `,
+    subject: 'Registration update — RDISTRO',
+    html: brandEmailLayout({
+      title: 'Registration Update',
+      subtitle: 'We’ve reviewed your RDISTRO application.',
+      bodyHtml: `
+        <p style="font-size:17px;color:#444;line-height:30px;margin:0 0 16px;">Hi ${firstName},</p>
+        <p style="font-size:17px;color:#555;line-height:30px;margin:0 0 16px;">
+          Thank you for your interest in <b>RDISTRO</b>. After reviewing your registration, we are unable to approve it at this time.
+        </p>
+        ${emailCallout(
+          'Please review and correct your details, then submit a new registration when you’re ready. Our team is happy to take another look.',
+          '#f59e0b'
+        )}
+        ${emailButton('https://rdistro.net/signup', 'Submit Again')}
+        <p style="margin-top:40px;font-size:16px;color:#666;line-height:28px;text-align:center;">
+          Questions? Reach us at <a href="mailto:support@rdistro.net" style="color:#6366f1;text-decoration:none;">support@rdistro.net</a>
+        </p>
+        ${emailSignOff()}
+      `,
+    }),
   })
 }
 

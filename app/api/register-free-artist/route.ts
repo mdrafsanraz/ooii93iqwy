@@ -2,6 +2,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { Resend } from 'resend'
 import { addRegistration, emailExists } from '@/lib/registrations'
 import { getActivePlan } from '@/lib/plans'
+import {
+  brandEmailLayout,
+  emailButton,
+  emailCallout,
+  emailSignOff,
+} from '@/lib/emailLayout'
 
 function generateTxnId() {
   return `FREE-ARTIST-${Date.now()}-${Math.random().toString(36).substring(2, 10)}`
@@ -108,51 +114,60 @@ export async function POST(request: NextRequest) {
       paymentStatus: 'succeeded',
     })
 
-    // Best-effort emails (do not fail the request if email isn't configured)
+    // Best-effort customer email (do not fail the request if email isn't configured)
     const resendKey = process.env.RESEND_API_KEY
-    const adminEmail = process.env.ADMIN_EMAIL
 
     if (resendKey) {
       try {
         const resend = new Resend(resendKey)
 
-        if (adminEmail) {
-          const adminHtml = `
-            <div style="font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Arial, sans-serif;">
-              <h2>🎉 New FREE Artist Registration</h2>
-              <p><strong>Royalties:</strong> ${activeArtistPlan.royaltyPercent}%</p>
-              <p><strong>Name:</strong> ${name}</p>
-              <p><strong>Email:</strong> ${email}</p>
-              <p><strong>Phone:</strong> ${phone}</p>
-              <p><strong>Country:</strong> ${country}</p>
-              <p><strong>Artist:</strong> ${artistName}</p>
-              ${socialLinks ? `<p><strong>Social:</strong> ${socialLinks}</p>` : ''}
-              ${spotifyLink ? `<p><strong>Spotify/Music Link:</strong> ${spotifyLink}</p>` : ''}
-              <p><strong>Transaction ID:</strong> ${txnId}</p>
-            </div>
-          `
-
-          await resend.emails.send({
-            from: 'RDistro <registration@rdistro.net>',
-            to: adminEmail,
-            subject: `🎤 FREE Artist signup: ${artistName}`,
-            html: adminHtml,
-          })
-        }
-
         await resend.emails.send({
           from: 'RDistro <registration@rdistro.net>',
           to: email,
-          subject: 'Your registration is in review — RDistro',
-          html: `
-            <div style="font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Arial, sans-serif; line-height:1.6;">
-              <h2>Registration received</h2>
-              <p>Hi <strong>${name}</strong>,</p>
-              <p>Your registration is now in review and you will receive an update shortly.</p>
-              <p>Please check your inbox and spam/junk folder for updates from RDistro.</p>
-              <p style="color:#6b7280;font-size:12px;">Reference: ${txnId}</p>
-            </div>
-          `,
+          subject: 'Your registration is in review — RDISTRO',
+          html: brandEmailLayout({
+            title: 'Registration Received ✅',
+            subtitle: 'Your application is now in review.',
+            bodyHtml: `
+              <p style="font-size:17px;color:#444;line-height:30px;margin:0 0 16px;">Hi ${name},</p>
+              <p style="font-size:17px;color:#555;line-height:30px;margin:0 0 16px;">
+                Thank you for choosing <b>RDISTRO</b>. We received your free Artist registration for <b>${artistName}</b> and our team is reviewing it now.
+              </p>
+              ${emailCallout(
+                `You’ll receive an update shortly. Please also check your <b>spam / junk</b> folder for emails from RDISTRO.`
+              )}
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin:10px 0 35px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;">
+                <tr>
+                  <td style="padding:24px;">
+                    <p style="margin:0 0 16px;font-size:12px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:1px;">Registration Summary</p>
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td style="padding:12px 0;border-bottom:1px solid #e5e7eb;font-size:15px;color:#6b7280;">Plan</td>
+                        <td style="padding:12px 0;border-bottom:1px solid #e5e7eb;text-align:right;font-size:15px;font-weight:600;color:#111827;">Artist (Free)</td>
+                      </tr>
+                      <tr>
+                        <td style="padding:12px 0;border-bottom:1px solid #e5e7eb;font-size:15px;color:#6b7280;">Artist</td>
+                        <td style="padding:12px 0;border-bottom:1px solid #e5e7eb;text-align:right;font-size:15px;font-weight:600;color:#111827;">${artistName}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding:12px 0;font-size:15px;color:#6b7280;">Reference</td>
+                        <td style="padding:12px 0;text-align:right;font-size:13px;font-weight:600;color:#6b7280;">${txnId}</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+              ${emailCallout(
+                'Once approved, you can distribute to Spotify, Apple Music, and 150+ platforms worldwide.',
+                '#00B67A'
+              )}
+              ${emailButton('https://rdistro.net', 'Visit RDISTRO')}
+              <p style="margin-top:40px;font-size:16px;color:#666;line-height:28px;text-align:center;">
+                Questions? Contact <a href="mailto:support@rdistro.net" style="color:#6366f1;text-decoration:none;">support@rdistro.net</a>
+              </p>
+              ${emailSignOff()}
+            `,
+          }),
         })
       } catch (emailError) {
         console.error('Free artist email error:', emailError)

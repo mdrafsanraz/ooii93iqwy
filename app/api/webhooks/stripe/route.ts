@@ -659,28 +659,6 @@ async function sendRegistrationEmails(registration: any, isTrial: boolean) {
 
   try {
     const resend = new Resend(process.env.RESEND_API_KEY)
-    const planName = registration.plan === 'artist' ? 'Artist' : 'Label'
-    const entityName = registration.plan === 'artist' ? registration.artistName : registration.labelName
-
-    // Send admin email (simplified version)
-    if (process.env.ADMIN_EMAIL) {
-      await resend.emails.send({
-        from: 'RDistro <registration@rdistro.net>',
-        to: process.env.ADMIN_EMAIL,
-        subject: `${isTrial ? '🎁 Free Trial' : '🎵'} New ${planName}: ${entityName} ${isTrial ? '(Trial)' : `($${registration.amount})`}`,
-        html: `
-          <div style="font-family: sans-serif; padding: 20px;">
-            <h2>New ${planName} Registration ${isTrial ? '(Free Trial)' : ''}</h2>
-            <p><strong>Name:</strong> ${registration.name}</p>
-            <p><strong>Email:</strong> ${registration.email}</p>
-            <p><strong>Plan:</strong> ${planName}</p>
-            <p><strong>Amount:</strong> $${registration.amount}</p>
-            <p><strong>Payment ID:</strong> ${registration.paymentIntentId}</p>
-            <p><a href="https://app.rdistro.com/admin">View in Admin Dashboard</a></p>
-          </div>
-        `,
-      })
-    }
 
     await resend.emails.send({
       from: 'RDistro <registration@rdistro.net>',
