@@ -511,21 +511,6 @@ export default function EmailsPage() {
                 {(!isPriceUpdate || recipientMode === 'one') && (
                   <div>
                     <label className="block text-xs font-medium text-[var(--text)] mb-1">To</label>
-                    {isPriceUpdate && registrations.length > 0 ? (
-                      <select
-                        value={toEmail}
-                        onChange={(e) => setToEmail(e.target.value)}
-                        className="input-field text-sm mb-2"
-                        required={recipientMode === 'one'}
-                      >
-                        <option value="">Select a registered user…</option>
-                        {registrations.map((r) => (
-                          <option key={r.id} value={r.email}>
-                            {r.name} — {r.email} ({r.plan})
-                          </option>
-                        ))}
-                      </select>
-                    ) : null}
                     <input
                       type="email"
                       value={toEmail}
