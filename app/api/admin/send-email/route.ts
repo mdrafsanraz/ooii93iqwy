@@ -3,7 +3,9 @@ import { Resend } from 'resend'
 import { getRegistrations } from '@/lib/registrations'
 import {
   ARTIST_PRICE_UPDATE_SUBJECT,
+  EXISTING_USER_PRICE_REASSURE_SUBJECT,
   buildArtistPriceUpdateEmail,
+  buildExistingUserPriceReassureEmail,
 } from '@/lib/emailTemplates'
 
 export const maxDuration = 300
@@ -20,6 +22,20 @@ const SENDER_NAMES: Record<string, string> = {
   'rafsan@rdistro.net': 'Rafsan - RDistro',
   'support@rdistro.net': 'RDistro Support',
   'registration@rdistro.net': 'RDistro Registration',
+}
+
+const BRANDED_TEMPLATES: Record<
+  string,
+  { defaultSubject: string; buildHtml: (name?: string) => string }
+> = {
+  artist_price_update: {
+    defaultSubject: ARTIST_PRICE_UPDATE_SUBJECT,
+    buildHtml: buildArtistPriceUpdateEmail,
+  },
+  existing_user_price_reassure: {
+    defaultSubject: EXISTING_USER_PRICE_REASSURE_SUBJECT,
+    buildHtml: buildExistingUserPriceReassureEmail,
+  },
 }
 
 function isAuthorized(request: NextRequest): boolean {
@@ -106,9 +122,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid sender email' }, { status: 400 })
     }
 
-    // Branded Artist price update template
-    if (template === 'artist_price_update') {
-      const emailSubject = subject || ARTIST_PRICE_UPDATE_SUBJECT
+    const branded = template ? BRANDED_TEMPLATES[template] : undefined
+    if (branded) {
+      const emailSubject = subject || branded.defaultSubject
 
       if (sendToAll) {
         const registrations = await getRegistrations()
@@ -132,7 +148,7 @@ export async function POST(request: NextRequest) {
               from,
               recipient.email,
               emailSubject,
-              buildArtistPriceUpdateEmail(recipient.name)
+              branded.buildHtml(recipient.name)
             )
             results.push({ email: recipient.email, ok: true })
           } catch (err) {
@@ -173,7 +189,7 @@ export async function POST(request: NextRequest) {
         from,
         to,
         emailSubject,
-        buildArtistPriceUpdateEmail(match?.name)
+        branded.buildHtml(match?.name)
       )
 
       return NextResponse.json({ success: true, messageId, sent: 1 })

@@ -6,6 +6,8 @@ import Link from 'next/link'
 import {
   ARTIST_PRICE_UPDATE_PLAIN,
   ARTIST_PRICE_UPDATE_SUBJECT,
+  EXISTING_USER_PRICE_REASSURE_PLAIN,
+  EXISTING_USER_PRICE_REASSURE_SUBJECT,
 } from '@/lib/emailTemplates'
 
 const EMAIL_ACCOUNTS = [
@@ -15,6 +17,11 @@ const EMAIL_ACCOUNTS = [
   { email: 'registration@rdistro.net', label: 'Registration', icon: '📝', description: 'New Signups' },
 ]
 
+const BRANDED_API_TEMPLATE: Record<string, string> = {
+  'artist-price-update': 'artist_price_update',
+  'existing-user-price-reassure': 'existing_user_price_reassure',
+}
+
 const EMAIL_TEMPLATES = [
   {
     id: 'artist-price-update',
@@ -22,6 +29,14 @@ const EMAIL_TEMPLATES = [
     icon: '💰',
     subject: ARTIST_PRICE_UPDATE_SUBJECT,
     message: ARTIST_PRICE_UPDATE_PLAIN,
+    branded: true as const,
+  },
+  {
+    id: 'existing-user-price-reassure',
+    name: 'Existing Users Not Affected',
+    icon: '💚',
+    subject: EXISTING_USER_PRICE_REASSURE_SUBJECT,
+    message: EXISTING_USER_PRICE_REASSURE_PLAIN,
     branded: true as const,
   },
   {
@@ -225,12 +240,15 @@ export default function EmailsPage() {
     setSending(true)
     setSendStatus(null)
 
-    const isPriceUpdate = activeTemplate === 'artist-price-update'
+    const apiTemplate = activeTemplate ? BRANDED_API_TEMPLATE[activeTemplate] : undefined
+    const isBranded = Boolean(apiTemplate)
+    const templateLabel =
+      EMAIL_TEMPLATES.find((t) => t.id === activeTemplate)?.name || 'this email'
 
-    if (isPriceUpdate && recipientMode === 'all') {
+    if (isBranded && recipientMode === 'all') {
       if (
         !confirm(
-          `Send the Artist $10 price update email to ALL ${registrations.length} registered users? This cannot be undone.`
+          `Send "${templateLabel}" to ALL ${registrations.length} registered users? This cannot be undone.`
         )
       ) {
         setSending(false)
@@ -240,10 +258,10 @@ export default function EmailsPage() {
 
     try {
       const payload =
-        isPriceUpdate
+        isBranded && apiTemplate
           ? {
               from: fromEmail,
-              template: 'artist_price_update',
+              template: apiTemplate,
               subject,
               sendToAll: recipientMode === 'all',
               ...(recipientMode === 'one' ? { to: toEmail } : {}),
@@ -268,7 +286,7 @@ export default function EmailsPage() {
 
       if (res.ok) {
         const successMsg =
-          isPriceUpdate && recipientMode === 'all'
+          isBranded && recipientMode === 'all'
             ? data.message || `Sent to ${data.sent}/${data.total} users`
             : 'Email sent!'
 
@@ -277,7 +295,7 @@ export default function EmailsPage() {
           {
             id: Date.now().toString(),
             from: fromEmail,
-            to: recipientMode === 'all' && isPriceUpdate ? `ALL USERS (${data.sent ?? 0})` : toEmail,
+            to: recipientMode === 'all' && isBranded ? `ALL USERS (${data.sent ?? 0})` : toEmail,
             subject,
             status: 'sent',
             sentAt: new Date().toISOString(),
@@ -337,7 +355,8 @@ export default function EmailsPage() {
     )
   }
 
-  const isPriceUpdate = activeTemplate === 'artist-price-update'
+  const isBranded = Boolean(activeTemplate && BRANDED_API_TEMPLATE[activeTemplate])
+  const activeTemplateMeta = EMAIL_TEMPLATES.find((t) => t.id === activeTemplate)
 
   return (
     <div className="min-h-screen bg-[var(--surface)]">
@@ -422,15 +441,25 @@ export default function EmailsPage() {
                 key={template.id}
                 onClick={() => openTemplate(template)}
                 className={`p-3 rounded-lg bg-[var(--surface)] border text-left hover:border-primary/50 ${
-                  template.id === 'artist-price-update'
-                    ? 'border-amber-300 bg-amber-50/50'
+                  template.branded
+                    ? template.id === 'existing-user-price-reassure'
+                      ? 'border-emerald-300 bg-emerald-50/50'
+                      : 'border-amber-300 bg-amber-50/50'
                     : 'border-[var(--border)]'
                 }`}
               >
                 <div className="text-xl mb-1">{template.icon}</div>
                 <p className="text-xs font-medium text-[var(--text)]">{template.name}</p>
                 {template.branded && (
-                  <p className="text-[10px] text-amber-700 mt-1">Branded · 1 or all users</p>
+                  <p
+                    className={`text-[10px] mt-1 ${
+                      template.id === 'existing-user-price-reassure'
+                        ? 'text-emerald-700'
+                        : 'text-amber-700'
+                    }`}
+                  >
+                    Branded · 1 or all users
+                  </p>
                 )}
               </button>
             ))}
@@ -442,7 +471,9 @@ export default function EmailsPage() {
             <div className="card w-full max-w-lg max-h-[90vh] overflow-y-auto">
               <div className="p-4 border-b border-[var(--border)] flex items-center justify-between">
                 <h3 className="font-bold text-[var(--text)]">
-                  {isPriceUpdate ? '💰 Artist Price Update' : '✉️ Compose Email'}
+                  {isBranded
+                    ? `${activeTemplateMeta?.icon || ''} ${activeTemplateMeta?.name || 'Template'}`
+                    : '✉️ Compose Email'}
                 </h3>
                 <button
                   onClick={() => {
@@ -471,7 +502,7 @@ export default function EmailsPage() {
                   </select>
                 </div>
 
-                {isPriceUpdate && (
+                {isBranded && (
                   <div>
                     <label className="block text-xs font-medium text-[var(--text)] mb-2">
                       Recipients
@@ -502,13 +533,13 @@ export default function EmailsPage() {
                     </div>
                     {recipientMode === 'all' && (
                       <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2 mb-2">
-                        Will send the branded price-update email to every unique registration email.
+                        Will send this branded email to every unique registration email.
                       </p>
                     )}
                   </div>
                 )}
 
-                {(!isPriceUpdate || recipientMode === 'one') && (
+                {(!isBranded || recipientMode === 'one') && (
                   <div>
                     <label className="block text-xs font-medium text-[var(--text)] mb-1">To</label>
                     <input
@@ -517,7 +548,7 @@ export default function EmailsPage() {
                       onChange={(e) => setToEmail(e.target.value)}
                       placeholder="recipient@example.com"
                       className="input-field text-sm"
-                      required={!isPriceUpdate || recipientMode === 'one'}
+                      required={!isBranded || recipientMode === 'one'}
                     />
                   </div>
                 )}
@@ -536,20 +567,20 @@ export default function EmailsPage() {
 
                 <div>
                   <label className="block text-xs font-medium text-[var(--text)] mb-1">
-                    {isPriceUpdate ? 'Preview (branded HTML will be sent)' : 'Message'}
+                    {isBranded ? 'Preview (branded HTML will be sent)' : 'Message'}
                   </label>
                   <textarea
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                     placeholder="Write your message..."
-                    rows={isPriceUpdate ? 10 : 8}
+                    rows={isBranded ? 10 : 8}
                     className="input-field text-sm resize-none"
-                    required={!isPriceUpdate}
-                    readOnly={isPriceUpdate}
+                    required={!isBranded}
+                    readOnly={isBranded}
                   />
-                  {isPriceUpdate && (
+                  {isBranded && (
                     <p className="text-[10px] text-[var(--text-muted)] mt-1">
-                      Recipients get the full branded template (logo header, July 20 / $10 details, CTA).
+                      Recipients get the full branded HTML template.
                     </p>
                   )}
                 </div>
@@ -557,10 +588,10 @@ export default function EmailsPage() {
                 <div className="flex gap-2 pt-2">
                   <button type="submit" disabled={sending} className="btn-primary flex-1 text-sm py-2.5">
                     {sending
-                      ? recipientMode === 'all' && isPriceUpdate
+                      ? recipientMode === 'all' && isBranded
                         ? 'Sending to all…'
                         : 'Sending...'
-                      : recipientMode === 'all' && isPriceUpdate
+                      : recipientMode === 'all' && isBranded
                         ? `📤 Send to all (${registrations.length})`
                         : '📤 Send'}
                   </button>
