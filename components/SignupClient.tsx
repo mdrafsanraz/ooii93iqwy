@@ -172,7 +172,14 @@ export default function SignupClient({ plans: initialPlans, trialEnabled }: Sign
 
       const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://rdistro.net'
       const txnId = data.txnId || `FREE-ARTIST-${Date.now()}`
-      window.location.href = `${baseUrl}/success?txn_id=${encodeURIComponent(txnId)}&free_artist=true`
+      const url = new URL(`${baseUrl}/success`)
+      url.searchParams.set('txn_id', txnId)
+      url.searchParams.set('free_artist', 'true')
+      url.searchParams.set('email', formData.email)
+      url.searchParams.set('amount', '0')
+      url.searchParams.set('currency', 'USD')
+      url.searchParams.set('plan', 'artist')
+      window.location.href = url.toString()
     } catch (err) {
       console.error('Free artist signup error:', err)
       setError(err instanceof Error ? err.message : 'Registration failed')

@@ -10,7 +10,26 @@ function SuccessContent() {
   const searchParams = useSearchParams()
   const isTrial = searchParams.get('trial') === 'true'
   const isFreeArtist = searchParams.get('free_artist') === 'true'
-  const transactionId = searchParams.get('txn_id') || searchParams.get('setup_intent') || searchParams.get('payment_intent')
+  const transactionId =
+    searchParams.get('txn_id') ||
+    searchParams.get('setup_intent') ||
+    searchParams.get('payment_intent')
+  const email = searchParams.get('email')
+  const amountRaw = searchParams.get('amount')
+  const currency = (searchParams.get('currency') || 'USD').toUpperCase()
+  const plan = searchParams.get('plan')
+  const hasReceipt = Boolean(email || transactionId || amountRaw != null)
+
+  const formattedAmount =
+    amountRaw != null && amountRaw !== ''
+      ? Number.isFinite(Number(amountRaw))
+        ? Number(amountRaw).toLocaleString(undefined, {
+            minimumFractionDigits: Number(amountRaw) % 1 === 0 ? 0 : 2,
+            maximumFractionDigits: 2,
+          })
+        : amountRaw
+      : null
+
   const [confetti, setConfetti] = useState(true)
 
   const headline = isFreeArtist
@@ -99,6 +118,51 @@ function SuccessContent() {
             {detail}
           </p>
         </div>
+
+        {/* Receipt summary */}
+        {hasReceipt && (
+          <div className="max-w-sm mx-auto mb-8 rounded-xl border border-gray-200 bg-white px-4 py-3 text-left shadow-sm">
+            <dl className="space-y-2 text-sm">
+              {email && (
+                <div className="flex items-baseline justify-between gap-3">
+                  <dt className="text-gray-500 shrink-0">Email</dt>
+                  <dd className="font-medium text-gray-900 truncate text-right">{email}</dd>
+                </div>
+              )}
+              {formattedAmount != null && (
+                <div className="flex items-baseline justify-between gap-3">
+                  <dt className="text-gray-500 shrink-0">Plan cost</dt>
+                  <dd className="font-medium text-gray-900 text-right">
+                    {currency === 'USD' ? '$' : ''}
+                    {formattedAmount}
+                    {plan ? (
+                      <span className="ml-1 text-xs font-normal text-gray-500 capitalize">
+                        / {plan}
+                      </span>
+                    ) : null}
+                    {isTrial ? (
+                      <span className="ml-1 text-xs font-normal text-gray-500">(trial)</span>
+                    ) : null}
+                  </dd>
+                </div>
+              )}
+              {(currency || formattedAmount != null) && (
+                <div className="flex items-baseline justify-between gap-3">
+                  <dt className="text-gray-500 shrink-0">Currency</dt>
+                  <dd className="font-medium text-gray-900 text-right">{currency}</dd>
+                </div>
+              )}
+              {transactionId && (
+                <div className="flex items-baseline justify-between gap-3">
+                  <dt className="text-gray-500 shrink-0">Trans ID</dt>
+                  <dd className="font-mono text-xs font-medium text-gray-900 truncate text-right max-w-[65%]">
+                    {transactionId}
+                  </dd>
+                </div>
+              )}
+            </dl>
+          </div>
+        )}
 
         {/* Info Card */}
         <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8 mb-8">

@@ -34,6 +34,33 @@ export default function CheckoutForm({
   const [isProcessing, setIsProcessing] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  const planCost =
+    formData.freeTrial || paymentType === 'setup'
+      ? 0
+      : formData.plan === 'artist'
+        ? artistPrice
+        : labelPrice
+
+  const buildSuccessUrl = (extra: Record<string, string | number | undefined | null> = {}) => {
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://rdistro.net'
+    const url = new URL(`${baseUrl}/success`)
+    const params: Record<string, string> = {
+      email: formData.email,
+      amount: String(planCost),
+      currency: 'USD',
+      plan: formData.plan || '',
+      ...Object.fromEntries(
+        Object.entries(extra)
+          .filter(([, v]) => v != null && v !== '')
+          .map(([k, v]) => [k, String(v)])
+      ),
+    }
+    Object.entries(params).forEach(([key, value]) => {
+      if (value) url.searchParams.set(key, value)
+    })
+    return url.toString()
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!stripe || !elements) return
@@ -48,8 +75,6 @@ export default function CheckoutForm({
       return
     }
 
-    const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://rdistro.net'
-    
     // Generate a unique transaction ID for tracking
     const generateTransactionId = () => `RD-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
 
@@ -58,7 +83,7 @@ export default function CheckoutForm({
       const { error: confirmError, setupIntent } = await stripe.confirmSetup({
         elements,
         confirmParams: {
-          return_url: `${baseUrl}/success?trial=true`,
+          return_url: buildSuccessUrl({ trial: 'true' }),
         },
         redirect: 'if_required',
       })
@@ -78,11 +103,11 @@ export default function CheckoutForm({
         console.error('Failed to send notification:', notifError)
         // Continue anyway - webhook will capture it
       }
-      window.location.href = `${baseUrl}/success?trial=true&txn_id=${transactionId}`
+      window.location.href = buildSuccessUrl({ trial: 'true', txn_id: transactionId })
     } else {
       const { error: confirmError, paymentIntent } = await stripe.confirmPayment({
         elements,
-        confirmParams: { return_url: `${baseUrl}/success` },
+        confirmParams: { return_url: buildSuccessUrl() },
         redirect: 'if_required',
       })
 
@@ -93,14 +118,19 @@ export default function CheckoutForm({
       }
 
       if (paymentIntent?.status === 'succeeded') {
+        const paidAmount = paymentIntent.amount / 100
         try {
-          await sendNotification(paymentIntent.id, paymentIntent.amount / 100)
+          await sendNotification(paymentIntent.id, paidAmount)
           console.log('Notification sent successfully for payment')
         } catch (notifError) {
           console.error('Failed to send notification:', notifError)
           // Continue anyway - webhook will capture it
         }
-        window.location.href = `${baseUrl}/success?txn_id=${paymentIntent.id}`
+        window.location.href = buildSuccessUrl({
+          txn_id: paymentIntent.id,
+          amount: paidAmount,
+          currency: (paymentIntent.currency || 'usd').toUpperCase(),
+        })
       }
     }
 
