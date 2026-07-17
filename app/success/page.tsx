@@ -17,7 +17,6 @@ function SuccessContent() {
   const email = searchParams.get('email')
   const amountRaw = searchParams.get('amount')
   const currency = (searchParams.get('currency') || 'USD').toUpperCase()
-  const plan = searchParams.get('plan')
   const hasReceipt = Boolean(email || transactionId || amountRaw != null)
 
   const formattedAmount =
@@ -132,18 +131,7 @@ function SuccessContent() {
               {formattedAmount != null && (
                 <div className="flex items-baseline justify-between gap-3">
                   <dt className="text-gray-500 shrink-0">Plan cost</dt>
-                  <dd className="font-medium text-gray-900 text-right">
-                    {currency === 'USD' ? '$' : ''}
-                    {formattedAmount}
-                    {plan ? (
-                      <span className="ml-1 text-xs font-normal text-gray-500 capitalize">
-                        / {plan}
-                      </span>
-                    ) : null}
-                    {isTrial ? (
-                      <span className="ml-1 text-xs font-normal text-gray-500">(trial)</span>
-                    ) : null}
-                  </dd>
+                  <dd className="font-medium text-gray-900 text-right">{formattedAmount}</dd>
                 </div>
               )}
               {(currency || formattedAmount != null) && (
