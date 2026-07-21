@@ -210,7 +210,7 @@ export const metadata: Metadata = {
     'distrokid offers', 'distrokid payment plans', 'distrokid plans comparison', 'distrokid help center',
     'aggregator music distribution', 'upload cover song to spotify', 'music distribution instagram', 'distrokid number',
     'pre save link distrokid', 'distrokid memberships', 'distrokid facebook', 'digital distribution platforms music',
-    'distrokid pay per stream', 'distrokid similar', 'upload your music to youtube', 'add your music to tiktok',
+    'distrokid pay per stream', 'distrokid similar', 'upload your music to youtube', 'add music to tiktok',
     'digital stores music', 'digital aggregator', 'song upload free', 'distrokid to spotify', 'distrokid instagram',
     'compare music distribution services', 'artist distribution', 'spotify distribution channels', 'apple music platforms',
     'upload own song to spotify', 'spotify for distributors', 'song platforms', 'i want to upload my song',
@@ -321,37 +321,33 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        {/* Google Tag Manager */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-MWSJCQPC');`,
+          }}
+        />
+        {/* End Google Tag Manager */}
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         <link rel="icon" href="/favicon.png" type="image/png" />
         <link rel="apple-touch-icon" href="/favicon.png" />
-        {/* Google Tag Manager */}
-        <Script id="google-tag-manager" strategy="beforeInteractive">
-          {`
-            (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-            new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-            j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-            'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-            })(window,document,'script','dataLayer','GTM-5699RNSZ');
-          `}
-        </Script>
       </head>
       <body className="antialiased">
-        {/* Google tag (gtag.js) */}
-        <Script
-          src="https://www.googletagmanager.com/gtag/js?id=AW-18279892909"
-          strategy="afterInteractive"
-        />
-        <Script id="google-analytics" strategy="afterInteractive">
-          {`
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-            gtag('config', 'AW-17911221416');
-            gtag('config', 'AW-18279892909');
-            gtag('config', 'G-VH9M7XWJLH');
-          `}
-        </Script>
+        {/* Google Tag Manager (noscript) */}
+        <noscript>
+          <iframe
+            src="https://www.googletagmanager.com/ns.html?id=GTM-MWSJCQPC"
+            height="0"
+            width="0"
+            style={{ display: 'none', visibility: 'hidden' }}
+          />
+        </noscript>
+        {/* End Google Tag Manager (noscript) */}
 
         {/* Meta Pixel Code */}
         <Script id="meta-pixel" strategy="afterInteractive">
