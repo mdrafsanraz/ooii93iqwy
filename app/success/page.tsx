@@ -50,15 +50,20 @@ function SuccessContent() {
   useEffect(() => {
     const timer = setTimeout(() => setConfetti(false), 5000)
     
-    // Google Ads conversion tracking with transaction ID
+    // Google Ads conversion tracking — Purchase (2)
     if (typeof window !== 'undefined' && typeof (window as any).gtag === 'function') {
-      // Generate fallback transaction ID if none provided
       const fallbackId = 'RD-' + Date.now() + '-' + Math.random().toString(36).slice(2, 11)
       const txnId = transactionId || fallbackId
-      
+      const value =
+        amountRaw != null && amountRaw !== '' && Number.isFinite(Number(amountRaw))
+          ? Number(amountRaw)
+          : 1.0
+
       ;(window as any).gtag('event', 'conversion', {
-        'send_to': 'AW-18279892909/rRGiCPiygcccEK2PxIxE',
-        'transaction_id': txnId
+        send_to: 'AW-18279892909/cySqCLOS2NEcEK2PxIxE',
+        value,
+        currency,
+        transaction_id: txnId,
       })
     }
 
@@ -68,7 +73,7 @@ function SuccessContent() {
     }
     
     return () => clearTimeout(timer)
-  }, [transactionId])
+  }, [transactionId, amountRaw, currency])
 
   return (
     <>
