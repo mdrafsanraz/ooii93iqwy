@@ -50,7 +50,7 @@ function SuccessContent() {
   useEffect(() => {
     const timer = setTimeout(() => setConfetti(false), 5000)
     
-    // Google Ads conversion tracking — Purchase (2)
+    // Google Ads Purchase (2) conversion
     if (typeof window !== 'undefined' && typeof (window as any).gtag === 'function') {
       const fallbackId = 'RD-' + Date.now() + '-' + Math.random().toString(36).slice(2, 11)
       const txnId = transactionId || fallbackId
