@@ -811,7 +811,7 @@ export default function SignupClient({ plans: initialPlans, trialEnabled }: Sign
 
             <p className="text-center lg:text-left text-xs text-gray-400 mt-5">
               By continuing, you agree to our{' '}
-              <Link href="#" className="underline hover:text-gray-600">Terms</Link>
+              <Link href="/terms" className="underline hover:text-gray-600">Terms</Link>
               {' & '}
               <Link href="#" className="underline hover:text-gray-600">Privacy Policy</Link>
             </p>
