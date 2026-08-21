@@ -429,12 +429,28 @@ export default function AdminPage() {
     setSelectedIds(new Set(filteredRegistrations.map((reg) => reg.id)))
   }
 
-  const downloadCSV = (rows: Registration[], filename: string) => {
-    const headers = ['Email', 'Account Type (Label or Artist)']
-    const csvRows = rows.map((reg) => [
-      reg.email,
-      reg.plan === 'label' ? 'Label' : 'Artist',
-    ])
+  const escapeCSV = (value: string) => {
+    const text = value ?? ''
+    if (/[",\n\r]/.test(text)) {
+      return `"${text.replace(/"/g, '""')}"`
+    }
+    return text
+  }
+
+  const downloadCSV = (
+    rows: Registration[],
+    filename: string,
+    options: { includeCountry?: boolean } = {}
+  ) => {
+    const { includeCountry = false } = options
+    const headers = includeCountry
+      ? ['Email', 'Account Type (Label or Artist)', 'Country']
+      : ['Email', 'Account Type (Label or Artist)']
+    const csvRows = rows.map((reg) => {
+      const row = [reg.email, reg.plan === 'label' ? 'Label' : 'Artist']
+      if (includeCountry) row.push(reg.country || '')
+      return row.map(escapeCSV)
+    })
     const csvContent = [headers.join(','), ...csvRows.map((row) => row.join(','))].join('\n')
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
     const url = URL.createObjectURL(blob)
@@ -461,6 +477,26 @@ export default function AdminPage() {
       return
     }
     downloadCSV(selectedRegistrations, 'import-template-selected.csv')
+  }
+
+  const exportToCSVWithCountry = () => {
+    if (filteredRegistrations.length === 0) {
+      alert('No registrations to export with current filters')
+      return
+    }
+    downloadCSV(filteredRegistrations, 'import-template-with-country.csv', {
+      includeCountry: true,
+    })
+  }
+
+  const exportSelectedToCSVWithCountry = () => {
+    if (selectedRegistrations.length === 0) {
+      alert('Select at least one registration to export')
+      return
+    }
+    downloadCSV(selectedRegistrations, 'import-template-selected-with-country.csv', {
+      includeCountry: true,
+    })
   }
 
   const bulkMarkSelected = async () => {
@@ -869,8 +905,22 @@ export default function AdminPage() {
               >
                 📥 Export Selected ({selectedRegistrations.length})
               </button>
+              <button
+                onClick={exportSelectedToCSVWithCountry}
+                disabled={selectedRegistrations.length === 0}
+                className="btn-secondary text-xs py-2 px-3"
+              >
+                📥 Export Selected + Country ({selectedRegistrations.length})
+              </button>
               <button onClick={exportToCSV} disabled={filteredRegistrations.length === 0} className="btn-secondary text-xs py-2 px-3">
                 📥 Export All ({filteredRegistrations.length})
+              </button>
+              <button
+                onClick={exportToCSVWithCountry}
+                disabled={filteredRegistrations.length === 0}
+                className="btn-secondary text-xs py-2 px-3"
+              >
+                📥 Export All + Country ({filteredRegistrations.length})
               </button>
             </div>
           </div>
